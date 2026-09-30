@@ -1,0 +1,9 @@
+# 改行コードの扱い（CLAUDE.md 4章）
+#
+# Windows の Git は既定でチェックアウト時に改行を CRLF に変換する。
+# リポジトリ内は LF に統一し、Linux 上で動くシェルスクリプトは必ず LF にする
+# （CRLF のままだと「/bin/bash^M: bad interpreter」で動かなくなるため）。
+* text=auto eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
