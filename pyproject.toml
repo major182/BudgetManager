@@ -13,3 +13,54 @@ dependencies = [
 # Django アプリは配布用パッケージにしないため、uv にビルドさせない
 [tool.uv]
 package = false
+
+[dependency-groups]
+dev = [
+    "django-stubs==5.2.9",
+    "django-stubs-ext==5.2.9",
+    "mypy==1.19.1",
+    "pytest==9.1.1",
+    "pytest-django==4.14.0",
+    "ruff==0.16.9",
+]
+
+# ---- lint・整形（Ruff 0.16.9）----
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+extend-exclude = ["**/migrations/*"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",  # 書き方の基本（PEP 8）
+    "F",       # 未使用の変数・import などの誤り
+    "I",       # import の並び順
+    "B",       # 不具合につながりやすい書き方
+    "UP",      # 古い書き方を新しい Python の書き方へ
+    "DJ",      # Django 特有の注意点
+    "S",       # セキュリティ上の問題（技術選定書 7章）
+]
+
+[tool.ruff.lint.per-file-ignores]
+# テストでは assert を使うのが普通なので、S101（assert の使用）を許可する
+"tests/**" = ["S101"]
+
+# ---- 型チェック（mypy 1.19.1 + django-stubs 5.2.9）----
+[tool.mypy]
+python_version = "3.14"
+strict = true
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+# django-environ は型の情報を持っていないため、型チェックの対象から外す
+[[tool.mypy.overrides]]
+module = ["environ", "environ.*"]
+ignore_missing_imports = true
+
+# ---- テスト（pytest 9.1.1 + pytest-django 4.14.0）----
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+testpaths = ["tests"]
+addopts = "--strict-markers"
