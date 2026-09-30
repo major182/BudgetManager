@@ -65,14 +65,11 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 
-# データベース
-# 段階3で MySQL に切り替えるまでの仮の設定
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+# データベース（MySQL 8.4。技術選定書 5.6）
+# 接続先は環境変数 DATABASE_URL で渡す（例：mysql://利用者:パスワード@ホスト:ポート/DB名）
+DATABASES = {"default": env.db("DATABASE_URL")}
+# 日本語（絵文字を含む）を正しく扱うため、接続の文字コードを utf8mb4 にする
+DATABASES["default"].setdefault("OPTIONS", {})["charset"] = "utf8mb4"
 
 
 # 言語・タイムゾーン

@@ -7,6 +7,7 @@ requires-python = "==3.14.*"
 dependencies = [
     "django==5.2.17",
     "django-environ==0.14.0",
+    "mysqlclient==2.3.0",
 ]
 
 # Django アプリは配布用パッケージにしないため、uv にビルドさせない

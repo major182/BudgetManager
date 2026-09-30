@@ -1,0 +1,29 @@
+# 開発・テスト用の MySQL（技術選定書 5.6）
+# 本番の RDS と同じバージョンに揃える。起動：docker compose up -d
+services:
+  db:
+    image: mysql:8.4.11
+    environment:
+      # 開発用の固定値。本番の接続情報は環境変数で渡し、ここには書かない（S-05）
+      MYSQL_DATABASE: budget
+      MYSQL_USER: budget
+      MYSQL_PASSWORD: budget
+      MYSQL_ROOT_PASSWORD: root
+      TZ: Asia/Tokyo
+    command:
+      # 日本語（絵文字を含む）を正しく保存するため、文字コードを utf8mb4 にする
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  db-data:
