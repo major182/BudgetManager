@@ -1,0 +1,58 @@
+# PR と main への push で、lint・整形・型・テストを実行する（要件定義書 NF-OP-04）
+# 手元の `uv run python scripts/check.py` と同じチェックを動かす
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    services:
+      # 本番の RDS・手元の compose.yaml と同じバージョンの MySQL
+      db:
+        image: mysql:8.4.11
+        env:
+          MYSQL_DATABASE: budget
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      # CI 専用の使い捨ての値。本番の秘密情報ではない
+      SECRET_KEY: ci-only-not-a-real-secret
+      DEBUG: "False"
+      ALLOWED_HOSTS: localhost
+      # テストで test_budget を作るため、CI では root で接続する
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/budget
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version: "0.12.21"
+          enable-cache: true
+
+      # mysqlclient は Linux 用のビルド済みパッケージがないため、ビルドに必要なライブラリを入れる
+      - name: MySQL のクライアントライブラリを入れる
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libmysqlclient-dev pkg-config
+
+      # uv.lock と食い違っていたら失敗させ、手元と同じバージョンで動かす
+      - name: 依存関係を入れる
+        run: uv sync --locked
+
+      - name: lint・整形・型・テスト
+        run: uv run python scripts/check.py

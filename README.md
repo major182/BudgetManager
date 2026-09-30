@@ -3,4 +3,34 @@
 スクール課題として作成する家計簿アプリです。
 
 - 開発の進め方・規約：[CLAUDE.md](CLAUDE.md)
-- 設計書：`docs/`（作成予定）
+- 要件定義書：[docs/01_requirements.md](docs/01_requirements.md)
+- 技術選定書：[docs/02_tech-stack.md](docs/02_tech-stack.md)
+
+## 開発の始め方（Windows）
+
+前提：[uv](https://docs.astral.sh/uv/) 0.12.21 と Docker Desktop が入っていること。
+
+```powershell
+# 1. Python 3.14.7 と、使うライブラリを入れる（バージョンは uv.lock で固定）
+uv sync
+
+# 2. 環境変数のファイルを作り、SECRET_KEY を書き換える（手順は .env.example の中）
+Copy-Item .env.example .env
+
+# 3. 開発用の MySQL 8.4.11 を起動する
+docker compose up -d
+
+# 4. DB にテーブルを作る
+uv run python manage.py migrate
+
+# 5. 開発用サーバーを起動する → http://127.0.0.1:8000/
+uv run python manage.py runserver
+```
+
+## チェック
+
+lint・整形・型・テストをまとめて実行します（CI でも同じものが動きます）。
+
+```powershell
+uv run python scripts/check.py
+```
