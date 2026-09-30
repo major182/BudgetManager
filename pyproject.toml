@@ -1,0 +1,14 @@
+[project]
+name = "budget-manager"
+version = "0.1.0"
+description = "家計簿アプリ（スクール課題）"
+# Python のバージョンは 3.14 系に固定する（技術選定書 3.2）
+requires-python = "==3.14.*"
+dependencies = [
+    "django==5.2.17",
+    "django-environ==0.14.0",
+]
+
+# Django アプリは配布用パッケージにしないため、uv にビルドさせない
+[tool.uv]
+package = false
