@@ -33,16 +33,17 @@
 
 | 区分 | 採用 |
 |---|---|
-| 言語・フレームワーク | Python 3.14、Django 5.2（長期サポート版） |
-| 画面 | Django テンプレート + htmx 2.0、Chart.js 4、素の CSS。**フロントエンドのビルドはしない** |
-| DB | MySQL 8.4（本番は RDS、開発・テストは Docker） |
-| パッケージ管理・ビルド | uv |
-| 静的解析・テスト | Ruff（lint・整形）、mypy + django-stubs、pytest + pytest-django |
-| 実行・定期処理 | Gunicorn、WhiteNoise、Django の管理コマンド + cron |
-| 接続の制限 | Tailscale（VPN）。サーバーはインターネットに公開しない |
+| 言語・フレームワーク | Python 3.14.7、Django 5.2.17 (LTS) |
+| 画面 | Django テンプレート + htmx 2.0.11、Chart.js 4.5.1、素の CSS。**フロントエンドのビルドはしない** |
+| DB | MySQL 8.4.11 (LTS)（本番は RDS、開発・テストは Docker）、mysqlclient 2.3.0 |
+| パッケージ管理・ビルド | uv 0.12.21 |
+| 静的解析・テスト | Ruff 0.16.9（lint・整形）、mypy 1.19.1 + django-stubs 5.2.9、pytest 9.1.1 + pytest-django 4.14.0 |
+| 実行・定期処理 | Gunicorn 26.2.0、WhiteNoise 6.12.0、Django の管理コマンド + cron |
+| 接続の制限 | Tailscale 1.102.5（VPN）。サーバーはインターネットに公開しない |
 
 - ライブラリを追加するときは、ビルドが必要にならないか（npm・Node.js を持ち込まないか）を確認する
-- 採用技術を変えるときは、技術選定書を先に更新する
+- **バージョンは数字で明記する**（「最新版」と書かない）。LTS がある技術は最新の LTS、ない技術は最新の安定版を使う
+- 採用技術・バージョンを変えるときは、技術選定書を先に更新する
 
 ---
 
