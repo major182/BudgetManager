@@ -142,7 +142,7 @@ erDiagram
 - **外部キーの削除時の動き**：特に書いていないものは「削除を禁止」（1.3）
 - **制約をどこで守るか**：「DB」は MySQL の制約（CHECK・UNIQUE・外部キー）で守る。「アプリ」は Django のフォームとサービス層で守る。
   外部キーの列を使う条件（例：振替なら振替先が必須）は、**MySQL が CHECK 制約で外部キーの列を扱える範囲に制限があるため、実装時に DB の制約にできるかを確かめる**。できない場合はアプリで守る
-- **日の値の表し方**：「日」を表す列（締め日・引き落とし日・月の開始日）は、**1〜28 は日付、0 は月末**を表す。29〜31日は月によって存在しないため選べないようにし、代わりに「月末」を使う
+- **日の値の表し方**：「日」を表す列（締め日・引き落とし日・月の開始日）は、**1〜30 は日付、0 は月末**を表す。**選んだ日がその月にない場合（例：2月の30日、うるう年でない2月の29日）は、その月の末日として扱う**。31日は「月末」と同じ意味になるため、選択肢には出さない
 
 ### 4.1 `app_settings`（設定）
 
@@ -152,7 +152,7 @@ erDiagram
 |---|---|---|---|---|---|
 | `currency_symbol` | VARCHAR(10) | ○ | `yen_sign` | 通貨記号。`yen_sign`（¥）／`yen_text`（円）／`none`（なし） | F-CF-01 |
 | `use_thousands_separator` | BOOLEAN | ○ | TRUE | 桁区切り（1,000）を付けるか | F-CF-01 |
-| `month_start_day` | TINYINT | ○ | 1 | 月の開始日。0（月末）〜28 | BR-20 |
+| `month_start_day` | TINYINT | ○ | 1 | 月の開始日。0（月末）〜30 | BR-20 |
 | `month_start_holiday_rule` | VARCHAR(10) | ○ | `none` | 開始日が土日祝日のとき。`none`（そのまま）／`previous`（前の平日）／`next`（次の平日） | BR-21 |
 | `week_start` | VARCHAR(10) | ○ | `sunday` | 週の開始曜日。`sunday`／`monday` | BR-22 |
 | `theme` | VARCHAR(10) | ○ | `system` | 画面のテーマ。`light`／`dark`／`system`（端末の設定に合わせる） | F-CF-04 |
@@ -163,7 +163,7 @@ erDiagram
 | 種類 | 内容 | どこで |
 |---|---|---|
 | CHECK | `id = 1`（2行目を作らせない） | DB |
-| CHECK | `month_start_day` が 0〜28 | DB |
+| CHECK | `month_start_day` が 0〜30 | DB |
 
 ### 4.2 `tax_rates`（税率）
 
@@ -224,9 +224,9 @@ erDiagram
 | `name` | VARCHAR(50) | ○ | | 名前（例：〇〇銀行） | F-AS-01 |
 | `opening_balance` | BIGINT | ○ | 0 | 開始残高（円）。カードは未払い額をマイナスで入れる | BR-41、BR-42 |
 | `is_credit_card` | BOOLEAN | ○ | FALSE | クレジットカードか。TRUE なら負債として扱う | BR-42 |
-| `closing_day` | TINYINT | | | 締め日。0（月末）〜28。カードのみ | BR-43 |
+| `closing_day` | TINYINT | | | 締め日。0（月末）〜30。カードのみ | BR-43 |
 | `payment_month_offset` | TINYINT | | | 引き落とし月。1（翌月）／2（翌々月）。カードのみ | BR-43 |
-| `payment_day` | TINYINT | | | 引き落とし日。0（月末）〜28。カードのみ | BR-43 |
+| `payment_day` | TINYINT | | | 引き落とし日。0（月末）〜30。カードのみ | BR-43 |
 | `payment_account_id` | BIGINT | | | 引き落とし口座（→ `assets`）。カードのみ | BR-43 |
 | `is_hidden` | BOOLEAN | ○ | FALSE | 非表示 | BR-44 |
 | `sort_order` | INT | ○ | 0 | 並び順（同じ資産グループの中での順番） | F-AS-01 |
@@ -235,7 +235,7 @@ erDiagram
 |---|---|---|
 | UNIQUE | `name` | DB |
 | CHECK | カードなら `closing_day`・`payment_month_offset`・`payment_day` がすべて入り、カード以外ならすべて空 | DB |
-| CHECK | `closing_day`・`payment_day` が 0〜28、`payment_month_offset` が 1〜2 | DB |
+| CHECK | `closing_day`・`payment_day` が 0〜30、`payment_month_offset` が 1〜2 | DB |
 | 必須 | カードなら `payment_account_id` が入り、カード以外なら空 | アプリ（外部キーの列のため。4.0 参照） |
 | 引き落とし口座 | 自分自身・ほかのカードは選べない | アプリ |
 | 削除 | 明細・定期収支から使われている、またはカードの引き落とし口座になっていれば削除できない | DB（外部キー）＋ アプリ |
@@ -307,7 +307,7 @@ erDiagram
 | 列名 | 型 | 必須 | 既定値 | 制約・説明 | 出典 |
 |---|---|---|---|---|---|
 | `budget_id` | BIGINT | ○ | | 予算（→ `budgets`）。**予算を削除すると一緒に削除する** | BR-51 |
-| `year_month` | DATE | ○ | | 対象の年月。**その月の1日**で表す（例：2026年10月 → 2026-10-01）。月の開始日（BR-20）を変えても、対象の「月」は変わらない | BR-51 |
+| `year_month` | DATE | ○ | | どの月の分の予算か。**その月の1日**で表す（例：10月分 → 2026-10-01）。予算は「1か月分」で、実際に使われる期間は月の開始日（BR-20）で決まる（例：開始日が25日なら、10月分の予算は 9/25〜10/24 に使う） | BR-51 |
 | `amount` | BIGINT | ○ | | その月の予算額（円）。0 以上 | BR-51 |
 
 | 種類 | 内容 | どこで |
@@ -345,7 +345,7 @@ erDiagram
 | CHECK | 振替なら `amount_input_type` が空、収入・支出なら入っている | DB |
 | 必須 | 振替なら `transfer_to_asset_id` が入り、`category_id`・`tax_rate_id` が空。収入・支出ならその逆 | アプリ（外部キーの列のため） |
 
-- `day_of_month` は、ほかの「日」の列と違って 29〜31 も選べる。「毎月31日」を「その月の末日」として扱うため（BR-61）
+- `day_of_month` は、ほかの「日」の列と違って 31 も選べる（1〜31）。「毎月31日」を「その月の末日」として扱う、という要件の書き方に合わせるため（BR-61）。その月にない日を末日として扱うのは、ほかの「日」の列と同じ
 - 定期収支ではマイナス支出を扱わない。返品・払い戻しは定期的に発生するものではないため
 
 ### 4.11 `recurring_runs`（定期収支の登録履歴）
