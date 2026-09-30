@@ -23,6 +23,7 @@
 
 - npm はパッケージ管理ツールでビルドツールではないが、判定で揉めないよう、できれば別のもの（pnpm・Yarn・Bun など）を選ぶ
 - フレームワークが内部で Vite を使っているもの（SvelteKit・Nuxt・Astro など）は Vite を使っていることになるので避ける
+- **費用をかけない**：AWS は無料配布クレジットの範囲内。ツール・ライブラリ・外部サービスも無料で使える範囲から選ぶ（要件定義書 C-04）
 - **インフラ・ツール類は同じでよい**：Terraform、AWS（EC2・RDS など）、Docker Desktop、GitHub / GitHub Actions
   - RDS を使う場合も、エンジンは PostgreSQL 以外（例：MySQL・MariaDB）にする
 - React 専用のライブラリ（TanStack Query の React 版など）、Spring 専用の仕組みを持ち込まない
