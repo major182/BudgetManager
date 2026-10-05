@@ -1,0 +1,8 @@
+{# 設定の各画面の見出し：戻る・題名・追加 #}
+<header class="header">
+  <a class="icon-btn" href="{% url 'core:settings_menu' %}" aria-label="戻る">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+  </a>
+  <h1>{{ heading }}</h1>
+  {% if add_url %}<button class="btn ghost" hx-get="{{ add_url }}" hx-target="#modal-body">＋ 追加</button>{% else %}<span class="header-spacer"></span>{% endif %}
+</header>

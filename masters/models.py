@@ -161,3 +161,16 @@ class Asset(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.name
+
+    @staticmethod
+    def _day_label(day: int | None) -> str:
+        return "月末" if day == 0 else f"{day}日"
+
+    def get_closing_day_label(self) -> str:
+        """締め日の表示。例：月末、15日"""
+        return self._day_label(self.closing_day)
+
+    def get_payment_label(self) -> str:
+        """引き落とし日の表示。例：翌月27日払い"""
+        month = "翌月" if self.payment_month_offset == 1 else "翌々月"
+        return f"{month}{self._day_label(self.payment_day)}払い"
