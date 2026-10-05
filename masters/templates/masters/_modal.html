@@ -9,6 +9,7 @@
   </header>
   <div class="form">
     {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+    {% if warning %}<p class="list-caption" role="note">{{ warning }}</p>{% endif %}
     {% for error in form.non_field_errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
     {% for field in form %}
       {% if field.name in "closing_day payment_month_offset payment_day payment_account" %}
