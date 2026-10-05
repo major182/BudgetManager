@@ -63,5 +63,5 @@ ignore_missing_imports = true
 # ---- テスト（pytest 9.1.1 + pytest-django 4.14.0）----
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
-testpaths = ["tests", "core", "masters", "ledger", "budgets", "recurring"]
+testpaths = ["tests", "core", "masters", "ledger", "budgets", "recurring", "reports"]
 addopts = "--strict-markers"

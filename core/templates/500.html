@@ -1,0 +1,17 @@
+<!doctype html>
+{# サーバーの内部のエラー（MSG-S01）。DB が使えない場合もあるため、base.html（設定を読む）を使わずに単独で表示する #}
+<html lang="ja" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>エラー｜家計簿</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <div class="error-page">
+    <h1>エラーが発生しました。</h1>
+    <p>時間をおいて、もう一度お試しください。</p>
+    <a class="btn primary" href="/">家計簿へ</a>
+  </div>
+</body>
+</html>

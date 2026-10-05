@@ -1,0 +1,10 @@
+{# 年月の見出しと前後への移動（画面設計書 1.1・4.1）。prev_url・next_url・label を受け取る #}
+<header class="header">
+  <a class="icon-btn" href="{{ prev_url }}" aria-label="前へ">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+  </a>
+  <div class="period"><span class="label">{{ label }}</span></div>
+  <a class="icon-btn" href="{{ next_url }}" aria-label="次へ">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+  </a>
+</header>

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "ledger",
     "budgets",
     "recurring",
+    "reports",
 ]
 
 MIDDLEWARE = [
@@ -63,6 +64,8 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.request",
                 "django.contrib.messages.context_processors.messages",
+                # 設定（テーマ・金額の表示など）を全テンプレートで使う
+                "core.context_processors.app_settings",
             ],
         },
     },
