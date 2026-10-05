@@ -194,3 +194,51 @@ LineFormSet = formset_factory(
     max_num=MAX_LINES,
     validate_max=True,
 )
+
+
+# ---------------------------------------------------------------- SC-03 検索（画面設計書 4.3）
+
+MSG_E08 = "終了日は開始日以降の日付にしてください。"
+
+
+def search_category_choices() -> list[tuple[str, str]]:
+    """検索の分類の選択肢：大分類だけ（小分類も含めて探す）。収入用と支出用を区別して出す。"""
+    choices = [("", "すべて")]
+    for c in Category.objects.filter(parent__isnull=True).order_by("-kind", "sort_order", "id"):
+        prefix = "支出" if c.kind == TransactionKind.EXPENSE else "収入"
+        choices.append((str(c.pk), f"{prefix}：{c.name}"))
+    return choices
+
+
+class SearchForm(StyledFormMixin, forms.Form):
+    """明細の検索の条件。"""
+
+    q = forms.CharField(label="キーワード", required=False, max_length=100)
+    kind = forms.ChoiceField(
+        label="種類", required=False, choices=[("", "すべて"), *TransactionKind.choices]
+    )
+    category = forms.TypedChoiceField(label="分類", required=False, coerce=int, empty_value=None)
+    asset = forms.ModelChoiceField(
+        label="資産", required=False, queryset=Asset.objects.none(), empty_label="すべて"
+    )
+    amount_min = forms.IntegerField(label="金額の下限", required=False)
+    amount_max = forms.IntegerField(label="金額の上限", required=False)
+    date_from = forms.DateField(label="期間の開始", widget=forms.DateInput(attrs={"type": "date"}))
+    date_until = forms.DateField(label="期間の終了", widget=forms.DateInput(attrs={"type": "date"}))
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        category_field: Any = self.fields["category"]
+        category_field.choices = search_category_choices()
+        asset_field: Any = self.fields["asset"]
+        asset_field.queryset = Asset.objects.order_by("asset_group__sort_order", "sort_order", "id")
+        self.fields["q"].widget.attrs["placeholder"] = "内容・メモ"
+        self.fields["amount_min"].widget.attrs["placeholder"] = "下限"
+        self.fields["amount_max"].widget.attrs["placeholder"] = "上限"
+
+    def clean(self) -> dict[str, Any]:
+        cleaned = super().clean() or {}
+        start, end = cleaned.get("date_from"), cleaned.get("date_until")
+        if start and end and start > end:
+            self.add_error("date_until", MSG_E08)
+        return cleaned

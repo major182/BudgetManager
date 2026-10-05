@@ -1,0 +1,16 @@
+{% load budget %}
+{# 日ごとの明細（画面設計書 4.1）。日付の見出しに、その日の収入・支出（0 円は出さない） #}
+{% for day in days %}
+<section class="day">
+  <div class="day-head">
+    <span class="d">{{ day.date.day }}</span>
+    <span class="w{% if day.date.weekday == 5 %} sat{% elif day.date.weekday == 6 or day.holiday %} sun{% endif %}">{{ day.date|date:"D" }}</span>
+    <span class="muted">{{ day.date.month }}月</span>
+    <span class="sums num">
+      {% if day.totals.income %}<span class="income">{% yen day.totals.income %}</span>{% endif %}
+      {% if day.totals.expense %}<span class="{{ day.totals.expense|expense_class }}">{% yen day.totals.expense %}</span>{% endif %}
+    </span>
+  </div>
+  {% for tx in day.transactions %}{% include "ledger/_tx_row.html" %}{% endfor %}
+</section>
+{% endfor %}

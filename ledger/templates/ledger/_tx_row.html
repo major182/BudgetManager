@@ -1,0 +1,12 @@
+{% load budget %}
+{# 明細の1行（家計簿・検索で共通。画面設計書 4.1）。押すと編集の小窓を開く #}
+{# hx-select を明示するのは、家計簿の hx-boost の「#main だけを取り出す」指定を引き継がないため #}
+<button type="button" class="row" hx-get="{% url 'ledger:edit' pk=tx.pk %}?modal=1" hx-target="#modal-body" hx-select="#entry-form" hx-swap="innerHTML">
+  <span class="cat">
+    {% if show_date %}<span class="muted">{{ tx.date|date:"n/j" }}（{{ tx.date|date:"D" }}）</span> {% endif %}
+    {% if tx.kind == "transfer" %}振替{% else %}{% with lines=tx.lines.all %}{{ lines.0.category }}{% if lines|length > 1 %} <span class="muted">他{{ lines|length|add:"-1" }}件</span>{% endif %}{% endwith %}{% endif %}
+    {% if tx.source == "recurring" %}<span class="badge">定期</span>{% endif %}
+  </span>
+  <span class="sub">{% if tx.description %}{{ tx.description }}　{% endif %}{% if tx.kind == "transfer" %}{{ tx.asset }} → {{ tx.transfer_to_asset }}{% else %}{{ tx.asset }}{% endif %}</span>
+  <span class="amt num {{ tx|amount_class }}">{% yen tx.amount %}</span>
+</button>

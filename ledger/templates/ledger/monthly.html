@@ -1,0 +1,12 @@
+{% extends "ledger/_ledger_base.html" %}
+{# SC-01 家計簿：月別（F-LS-03）。押すとその月の日別へ #}
+{% load budget %}
+{% block body %}
+{% for row in rows %}
+<a class="mrow" href="{% url 'ledger:daily' year_month=row.period.month %}">
+  <span class="m">{{ row.period.month.month }}月 <span class="muted small-inline">{{ row.period.start|date:"n/j" }}〜{{ row.period.end|date:"n/j" }}</span></span>
+  <span class="num {{ row.totals.diff|signed_class }}">{% yen row.totals.diff %}</span>
+  <span class="nums num"><span class="income">{% yen row.totals.income %}</span><span class="{{ row.totals.expense|expense_class }}">{% yen row.totals.expense %}</span></span>
+</a>
+{% endfor %}
+{% endblock %}

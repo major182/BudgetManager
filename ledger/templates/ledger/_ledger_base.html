@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{# 家計簿の3つの表示に共通の部分（画面設計書 4.1） #}
+{# 年月・タブの移動は htmx で本体だけを差し替え、URL も更新する（画面設計書 1.4） #}
+{% load budget %}
+{% block title %}家計簿{% endblock %}
+{% block content %}
+<div hx-boost="true" hx-target="#main" hx-select="#main" hx-swap="outerHTML">
+  <header class="header">
+    <a class="icon-btn" href="{{ prev_url }}" aria-label="前へ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+    </a>
+    <div class="period">
+      {% if view == "monthly" %}
+      <span class="label">{{ label }}</span>
+      {% else %}
+      {# 年月を押すと月を選べる（F-LS-05） #}
+      <label class="label month-pick">{{ label }}
+        <input type="month" name="month" value="{{ month|date:'Y-m' }}" aria-label="年月を選ぶ"
+          hx-get="{% url 'ledger:jump' %}" hx-trigger="change" hx-vals='{"view": "{{ view }}"}'>
+      </label>
+      {% endif %}
+      {% if period and not period.is_calendar_month %}<span class="range">{{ period.start|date:"n/j" }}〜{{ period.end|date:"n/j" }}</span>{% endif %}
+    </div>
+    <a class="icon-btn" href="{{ next_url }}" aria-label="次へ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+    <a class="icon-btn" href="{% url 'ledger:search' %}" aria-label="検索" hx-boost="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>
+    </a>
+  </header>
+  {% if not is_current %}<div class="toolbar"><a class="btn ghost" href="{{ current_url }}">今月に戻る</a></div>{% endif %}
+  <div class="totals">
+    <div><div class="cap">収入</div><div class="val num income">{% yen totals.income %}</div></div>
+    <div><div class="cap">支出</div><div class="val num {{ totals.expense|expense_class }}">{% yen totals.expense %}</div></div>
+    <div><div class="cap">合計</div><div class="val num {{ totals.diff|signed_class }}">{% yen totals.diff %}</div></div>
+  </div>
+  <nav class="tabs" role="tablist">
+    {% for key, name, url in tabs %}<a role="tab" href="{{ url }}" aria-selected="{% if key == view %}true{% else %}false{% endif %}">{{ name }}</a>{% endfor %}
+  </nav>
+  {% block body %}{% endblock %}
+</div>
+{# 明細の登録（F-TX-01）。カレンダーで日を選んでいれば、その日を初期値にする #}
+<button class="fab" aria-label="明細を登録" hx-get="{% url 'ledger:new' %}?modal=1{% if selected %}&amp;date={{ selected|date:'Y-m-d' }}{% endif %}" hx-target="#modal-body">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+{% include "core/_modal_frame.html" %}
+{% endblock %}

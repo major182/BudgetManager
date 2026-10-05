@@ -1,20 +1,21 @@
 """家計簿（SC-01）と明細入力（SC-02）。"""
 
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any, cast
 
 from django.contrib import messages
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from core.choices import AmountInputType, TransactionKind
-from core.dates import add_months, month_label
+from core.dates import month_label
 from core.models import AppSettings
-from ledger import entry, services
-from ledger.forms import BaseLineFormSet, LineFormSet, TransactionForm
+from core.periods import holidays_between, month_containing, month_period
+from ledger import entry, queries, services
+from ledger.forms import BaseLineFormSet, LineFormSet, SearchForm, TransactionForm
 from ledger.models import Transaction
 from ledger.tax import LineInput, calculate
 from masters.models import TaxRate
@@ -24,18 +25,156 @@ MSG_I02 = "保存しました"
 MSG_I03 = "削除しました"
 
 
+def _ledger(request: HttpRequest, view: str, month: date, extra: dict[str, Any]) -> HttpResponse:
+    """家計簿の3つの表示に共通の部分（見出し・合計・タブ。画面設計書 4.1）。"""
+    settings = AppSettings.load()
+    today = services.today()
+    current = month_containing(today, settings).month
+    if view == "monthly":
+        prev_url = reverse("ledger:monthly", kwargs={"year": month.year - 1})
+        next_url = reverse("ledger:monthly", kwargs={"year": month.year + 1})
+        label = f"{month.year}年"
+        is_current = month.year == current.year
+    else:
+        prev_month, next_month = queries.neighbors(month)
+        prev_url = reverse(f"ledger:{view}", kwargs={"year_month": prev_month})
+        next_url = reverse(f"ledger:{view}", kwargs={"year_month": next_month})
+        label = month_label(month)
+        is_current = month == current
+    context = {
+        "menu": "ledger",
+        "view": view,
+        "month": month,
+        "label": label,
+        "prev_url": prev_url,
+        "next_url": next_url,
+        "current_url": reverse(f"ledger:{view}", kwargs={"year": current.year})
+        if view == "monthly"
+        else reverse(f"ledger:{view}", kwargs={"year_month": current}),
+        "is_current": is_current,
+        "tabs": [
+            ("daily", "日別", reverse("ledger:daily", kwargs={"year_month": month})),
+            ("calendar", "カレンダー", reverse("ledger:calendar", kwargs={"year_month": month})),
+            ("monthly", "月別", reverse("ledger:monthly", kwargs={"year": month.year})),
+        ],
+        **extra,
+    }
+    return render(request, f"ledger/{view}.html", context)
+
+
 def daily(request: HttpRequest, year_month: date) -> HttpResponse:
-    """SC-01 家計簿（日別）。明細の一覧は Issue 5 で実装する。"""
-    return render(
+    """SC-01 家計簿（日別。F-LS-01・04）。"""
+    period = month_period(year_month)
+    transactions = list(queries.with_details(queries.in_period(period)))
+    holidays = holidays_between(period.start, period.end)
+    return _ledger(
         request,
-        "ledger/daily.html",
+        "daily",
+        year_month,
         {
-            "menu": "ledger",
-            "label": month_label(year_month),
-            "prev_url": reverse("ledger:daily", kwargs={"year_month": add_months(year_month, -1)}),
-            "next_url": reverse("ledger:daily", kwargs={"year_month": add_months(year_month, 1)}),
+            "period": period,
+            "totals": queries.totals(queries.in_period(period)),
+            "days": queries.group_by_day(transactions, holidays),
         },
     )
+
+
+def calendar(request: HttpRequest, year_month: date) -> HttpResponse:
+    """SC-01 家計簿（カレンダー。F-LS-02）。日付を選ぶと、その日の明細を下に出す。"""
+    settings = AppSettings.load()
+    period = month_period(year_month, settings)
+    today = services.today()
+    selected = _parse_date(request.GET.get("date")) or (
+        today if period.start <= today <= period.end else period.start
+    )
+    day_transactions = list(queries.with_details(Transaction.objects.filter(date=selected)))
+    return _ledger(
+        request,
+        "calendar",
+        year_month,
+        {
+            "period": period,
+            "totals": queries.totals(queries.in_period(period)),
+            "weeks": queries.calendar_weeks(period, settings),
+            "weekday_labels": queries.weekday_labels(settings),
+            "selected": selected,
+            "today": today,
+            "day": queries.group_by_day(day_transactions, holidays_between(selected, selected)),
+        },
+    )
+
+
+def monthly(request: HttpRequest, year: int) -> HttpResponse:
+    """SC-01 家計簿（月別。F-LS-03）。"""
+    rows = queries.months_of_year(year, AppSettings.load())
+    return _ledger(
+        request,
+        "monthly",
+        date(year, 1, 1),
+        {"rows": rows, "totals": queries.year_totals(rows)},
+    )
+
+
+def jump(request: HttpRequest) -> HttpResponse:
+    """年月を選んで移る（F-LS-05）。?month=2026-10"""
+    try:
+        year, month = (int(x) for x in request.GET.get("month", "").split("-"))
+        target = date(year, month, 1)
+    except ValueError:
+        target = month_containing(services.today()).month
+    view = request.GET.get("view", "daily")
+    if view not in ("daily", "calendar"):
+        view = "daily"
+    return redirect(f"ledger:{view}", year_month=target)
+
+
+def _parse_date(value: str | None) -> date | None:
+    try:
+        return date.fromisoformat(value) if value else None
+    except ValueError:
+        return None
+
+
+def search(request: HttpRequest) -> HttpResponse:
+    """SC-03 検索（F-LS-06）。条件は URL に残す（戻ったときに同じ結果を出すため）。"""
+    today = services.today()
+    # 期間の初期値は過去1年（今日の1年前の翌日〜今日）。2/29 の1年前は 2/28 として扱う
+    a_year_ago = today - timedelta(days=366 if today.month == 2 and today.day == 29 else 365)
+    defaults = {"date_from": a_year_ago + timedelta(days=1), "date_until": today}
+    if request.GET:
+        form = SearchForm(request.GET)
+    else:
+        form = SearchForm({key: value.isoformat() for key, value in defaults.items()})
+
+    page_param = request.GET.get("page", "1")
+    page = int(page_param) if page_param.isdigit() and int(page_param) > 0 else 1
+    results: list[Transaction] = []
+    total = queries.Totals()
+    count = 0
+    if form.is_valid():
+        found = queries.search(form.cleaned_data)
+        count = found.count()
+        total = queries.totals(found)
+        size = queries.SEARCH_PAGE
+        results = list(queries.with_details(found)[(page - 1) * size : page * size])
+    dates = [tx.date for tx in results]
+    holidays = holidays_between(min(dates), max(dates)) if dates else set()
+    # 「さらに表示」の URL は、今の条件にページ番号だけを付け替える
+    query = request.GET.copy()
+    query.pop("page", None)
+    context = {
+        "menu": "ledger",
+        "form": form,
+        "days": queries.group_by_day(results, holidays),
+        "count": count,
+        "totals": total,
+        "next_page": page + 1 if page * queries.SEARCH_PAGE < count else None,
+        "query": query,
+    }
+    # 「さらに表示」は、次の 50 件の部分だけを返す
+    if request.headers.get("HX-Request") and request.GET.get("page"):
+        return render(request, "ledger/_search_results.html", context)
+    return render(request, "ledger/search.html", context)
 
 
 # ---------------------------------------------------------------- SC-02 明細入力

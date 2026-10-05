@@ -8,11 +8,12 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.dates import add_months, month_label
+from core.periods import month_containing
 
 
 def stats_current(request: HttpRequest) -> HttpResponse:
     """メニューの「統計」は今月の統計へ移る。"""
-    return redirect("reports:stats", year_month=timezone.localdate().replace(day=1))
+    return redirect("reports:stats", year_month=month_containing(timezone.localdate()).month)
 
 
 def stats(request: HttpRequest, year_month: date) -> HttpResponse:

@@ -1,18 +1,5 @@
-{% extends "base.html" %}
-{# SC-01 家計簿（画面設計書 4.1）。明細の一覧は Issue 5 で実装する #}
-{% load budget %}
-{% block title %}家計簿{% endblock %}
-{% block content %}
-{% include "core/_period_header.html" %}
-<div class="totals">
-  <div><div class="cap">収入</div><div class="val num income">{% yen 0 %}</div></div>
-  <div><div class="cap">支出</div><div class="val num expense">{% yen 0 %}</div></div>
-  <div><div class="cap">合計</div><div class="val num">{% yen 0 %}</div></div>
-</div>
-<div class="empty">この期間の明細はありません。</div>
-{# 明細の登録（F-TX-01）。入力の小窓で開く #}
-<button class="fab" aria-label="明細を登録" hx-get="{% url 'ledger:new' %}?modal=1" hx-target="#modal-body">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-</button>
-{% include "core/_modal_frame.html" %}
+{% extends "ledger/_ledger_base.html" %}
+{# SC-01 家計簿：日別（F-LS-01） #}
+{% block body %}
+{% if days %}{% include "ledger/_days.html" %}{% else %}<div class="empty">この期間の明細はありません。</div>{% endif %}
 {% endblock %}
