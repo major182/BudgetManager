@@ -35,6 +35,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # このアプリの app（実装計画の分け方）
+    "core",
+    "masters",
+    "ledger",
+    "budgets",
+    "recurring",
 ]
 
 MIDDLEWARE = [
