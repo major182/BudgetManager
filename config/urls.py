@@ -18,4 +18,5 @@ urlpatterns = [
     path("", include("reports.urls")),
     path("", include("masters.urls")),
     path("", include("budgets.urls")),
+    path("", include("recurring.urls")),
 ]

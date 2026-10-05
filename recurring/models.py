@@ -149,6 +149,22 @@ class RecurringItem(TimeStampedModel):
             ),
         ]
 
+    def schedule_label(self) -> str:
+        """周期の説明。例：毎月25日（前営業日）、毎週月曜、毎月末（画面設計書 4.13）。"""
+        weekdays = "月火水木金土日"
+        if self.frequency == self.Frequency.MONTHLY:
+            text = f"毎月{self.day_of_month}日"
+        elif self.frequency == self.Frequency.MONTH_END:
+            text = "毎月末"
+        elif self.frequency == self.Frequency.WEEKLY:
+            text = f"毎週{weekdays[self.weekday or 0]}曜"
+        else:
+            text = f"毎年{self.month}月{self.day_of_month}日"
+        # 定期収支では「営業日」（土日祝日・年末年始以外）にずらす（BR-62）
+        names: dict[str, str] = {HolidayRule.PREVIOUS: "前営業日", HolidayRule.NEXT: "後営業日"}
+        rule = names.get(self.holiday_rule)
+        return f"{text}（{rule}）" if rule else text
+
 
 class RecurringRun(TimeStampedModel):
     """定期収支の各回を登録した記録。同じ回の二重登録を防ぐ（BR-64）。"""

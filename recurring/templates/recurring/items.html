@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{# SC-12 定期収支管理（画面設計書 4.13） #}
+{% load budget %}
+{% block title %}定期収支{% endblock %}
+{% block content %}
+{% url 'recurring:new' as add_url %}
+{% include "masters/_back_header.html" with heading="定期収支" %}
+{% for row in rows %}
+{% with item=row.item %}
+<button type="button" class="row" hx-get="{% url 'recurring:edit' pk=item.pk %}" hx-target="#modal-body">
+  <span class="cat">{% firstof item.description item.category "振替" %}</span>
+  <span class="sub">
+    {{ item.schedule_label }}
+    {% if item.kind == "transfer" %}{{ item.asset }} → {{ item.transfer_to_asset }}{% else %}{{ item.asset }}{% endif %}
+  </span>
+  <span class="amt num {% if item.kind == 'income' %}income{% elif item.kind == 'expense' %}expense{% else %}transfer{% endif %}">{% yen item.amount %}</span>
+  <span class="sub">{% if row.next %}次回 {{ row.next|date:"n/j" }}（{{ row.next|date:"D" }}）{% else %}終了{% endif %}</span>
+</button>
+{% endwith %}
+{% empty %}
+<div class="empty">定期収支はまだありません。</div>
+{% endfor %}
+{% include "core/_modal_frame.html" %}
+{% endblock %}
