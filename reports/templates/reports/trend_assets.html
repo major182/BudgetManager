@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{# SC-05 資産の推移（画面設計書 4.5、F-ST-05）。各月の終了日の残高 #}
+{% load static budget %}
+{% block title %}資産の推移{% endblock %}
+{% block head %}
+<script src="{% static 'vendor/chart.umd.min.js' %}" defer></script>
+<script src="{% static 'js/charts.js' %}" defer></script>
+{% endblock %}
+{% block content %}
+<header class="header">
+  <a class="icon-btn" href="{% url 'reports:assets' %}" aria-label="戻る">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+  </a>
+  <h1>資産の推移</h1><span class="header-spacer"></span>
+</header>
+{# 全体か、1つの資産（非表示の資産も選べる） #}
+<form method="get" class="section">
+  <input type="hidden" name="month" value="{{ month_param }}">
+  <select name="asset" class="input" aria-label="資産" onchange="this.form.submit()">
+    <option value="">全体</option>
+    {% for a in assets %}<option value="{{ a.pk }}"{% if a.pk == asset_id %} selected{% endif %}>{{ a.name }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="btn">表示</button></noscript>
+</form>
+{% include "reports/_trend_period.html" %}
+<section class="section"><div class="chart-wrap wide"><canvas id="chart-line" aria-label="資産の推移"></canvas></div></section>
+{{ chart|json_script:"line-data" }}
+<section class="section">
+  {% for row in rows %}
+  <div class="bill">
+    <span>{{ row.period.month|date:"n月" }}末</span>
+    {% if asset_id %}<span class="num {{ row.balance|signed_class }}">{% yen row.balance %}</span>
+    {% else %}<span class="num small-inline">資産 {% yen row.assets %}　負債 {% yen row.liabilities %}　純資産 {% yen row.net %}</span>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

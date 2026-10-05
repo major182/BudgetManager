@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{# SC-05 分類の推移（画面設計書 4.5、F-ST-04） #}
+{% load static budget %}
+{% block title %}{{ category.name }}の推移{% endblock %}
+{% block head %}
+<script src="{% static 'vendor/chart.umd.min.js' %}" defer></script>
+<script src="{% static 'js/charts.js' %}" defer></script>
+{% endblock %}
+{% block content %}
+<header class="header">
+  <a class="icon-btn" href="{{ back_url }}" aria-label="戻る">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+  </a>
+  <h1>{{ category.name }}の推移</h1><span class="header-spacer"></span>
+</header>
+{% include "reports/_trend_period.html" %}
+<section class="section"><div class="chart-wrap wide"><canvas id="chart-bar" aria-label="{{ category.name }}の月ごとの金額"></canvas></div></section>
+{{ chart|json_script:"bar-data" }}
+<section class="section">
+  <div class="bill"><span>平均</span><span class="num">{% yen average %}</span></div>
+  <div class="bill"><span>最大</span><span class="num">{% yen maximum %}</span></div>
+</section>
+<section class="section">
+  {% for period, value in table %}<div class="bill"><span>{{ period.month|date:"Y年n月" }}</span><span class="num">{% yen value %}</span></div>{% endfor %}
+</section>
+{% endblock %}

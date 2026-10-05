@@ -1438,3 +1438,40 @@ a.cal-cell {
 a.asset-row {
   color: inherit;
 }
+
+/* ---- 統計（画面設計書 4.4） ---- */
+.tab-sum {
+  margin-left: 6px;
+}
+
+.cat-detail > summary {
+  list-style: none;
+}
+
+.cat-detail > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cat-detail[open] .chev {
+  transform: rotate(90deg);
+}
+
+/* 分類の色（charts.js の PALETTE と同じ順） */
+.dot-0 { background: #4cc2b0; }
+.dot-1 { background: #5aa9ff; }
+.dot-2 { background: #f6b04d; }
+.dot-3 { background: #b58cff; }
+.dot-4 { background: #ff8fa3; }
+.dot-5 { background: #7fd46b; }
+.dot-6 { background: #f47c4c; }
+.dot-7 { background: #57c7e3; }
+.dot-8 { background: #8a94a3; }
+
+a.budget {
+  display: block;
+  color: inherit;
+}
+
+.small-label {
+  font-size: 14px;
+}
