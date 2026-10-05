@@ -1,7 +1,85 @@
 {% extends "base.html" %}
-{# SC-04 統計（画面設計書 4.4）。中身は Issue 7 で実装する #}
+{# SC-04 統計（画面設計書 4.4） #}
+{% load static budget %}
 {% block title %}統計{% endblock %}
+{% block head %}
+<script src="{% static 'vendor/chart.umd.min.js' %}" defer></script>
+<script src="{% static 'js/charts.js' %}" defer></script>
+{% endblock %}
 {% block content %}
-{% include "core/_period_header.html" %}
+<header class="header">
+  <a class="icon-btn" href="{{ prev_url }}?kind={{ kind }}" aria-label="前へ">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+  </a>
+  <div class="period"><span class="label">{{ label }}</span>
+    {% if show_range %}<span class="range">{{ span.start|date:"n/j" }}〜{{ span.end|date:"n/j" }}</span>{% endif %}</div>
+  <a class="icon-btn" href="{{ next_url }}?kind={{ kind }}" aria-label="次へ">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+  </a>
+  {# 集計の単位：月／年（F-ST-03） #}
+  <span class="seg">
+    <a href="{{ month_url }}?kind={{ kind }}" aria-pressed="{% if unit == 'month' %}true{% else %}false{% endif %}">月</a>
+    <a href="{{ year_url }}?kind={{ kind }}" aria-pressed="{% if unit == 'year' %}true{% else %}false{% endif %}">年</a>
+  </span>
+</header>
+<nav class="tabs" role="tablist">
+  <a role="tab" href="?kind=expense" aria-selected="{% if kind == 'expense' %}true{% else %}false{% endif %}">支出 <span class="num {{ expense|expense_class }} tab-sum">{% yen expense %}</span></a>
+  <a role="tab" href="?kind=income" aria-selected="{% if kind == 'income' %}true{% else %}false{% endif %}">収入 <span class="num income tab-sum">{% yen income %}</span></a>
+</nav>
+
+{% if rows %}
+<div class="stats-layout">
+  {# 円グラフ（F-ST-01）。上位 8 分類まで色を分け、残りは「その他」 #}
+  <div class="chart-wrap"><canvas id="chart-pie" aria-label="分類別の割合"></canvas></div>
+  {{ pie|json_script:"pie-data" }}
+  <div>
+    {% for item in rows %}
+    {# 大分類を押すと小分類を開く（F-ST-02） #}
+    <details class="cat-detail">
+      <summary class="cat-row">
+        <span class="dot dot-{{ item.color }}"></span><span>{{ item.row.category.name }}</span>
+        <span class="pct">{{ item.row.percent }}%</span><span class="num">{% yen item.row.amount %}</span><span class="chev">›</span>
+      </summary>
+      <div class="subcats">
+        {% for sub in item.subs %}<div class="cat-row"><span></span><span>└ {{ sub.name }}</span><span class="num">{% yen sub.amount %}</span></div>{% endfor %}
+        <a class="more" href="{% url 'reports:trend_category' pk=item.row.category.pk %}?month={{ trend_month|date:'Y-m' }}">{{ item.row.category.name }}の推移を見る ›</a>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
 <div class="empty">この期間の明細はありません。</div>
+{% endif %}
+
+{% if budgets is not None %}
+{# 予算の消化状況（F-BG-03）。超過は赤 #}
+<section class="section">
+  <h2>予算</h2>
+  {% for b in budgets %}
+  <a class="budget{% if b.over %} over{% endif %}" href="{% url 'budgets:settings' %}">
+    <div class="top"><span>{{ b.name }}</span><span class="num">{% yen b.used %} / {% yen b.amount %}</span></div>
+    {% if b.percent is not None %}<div class="bar"><span style="width:{% if b.percent > 100 %}100{% else %}{{ b.percent }}{% endif %}%"></span></div>{% endif %}
+    <div class="bottom"><span>{% if b.percent is not None %}{{ b.percent }}%{% endif %}</span>
+      <span class="num{% if b.over %} expense{% endif %}">{% if b.over %}超過 {% yen b.remaining %}{% else %}残り {% yen b.remaining %}{% endif %}</span></div>
+  </a>
+  {% empty %}
+  <p class="muted small">予算が設定されていません。</p>
+  <a class="btn ghost" href="{% url 'budgets:settings' %}">予算を設定する ›</a>
+  {% endfor %}
+</section>
+{% endif %}
+
+{# 消費税（F-ST-06） #}
+<section class="section">
+  <h2>消費税</h2>
+  {% if taxes %}
+  <table class="tax-table num">
+    <thead><tr><th>税率</th><th>税抜</th><th>消費税</th></tr></thead>
+    <tbody>
+      {% for t in taxes %}<tr><td>{{ t.rate|floatformat:"-1" }}%</td><td>{{ t.excl|comma }}</td><td>{{ t.tax|comma }}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted small">この期間の明細はありません。</p>{% endif %}
+</section>
 {% endblock %}

@@ -3,7 +3,11 @@
 {% load budget %}
 {% block title %}資産{% endblock %}
 {% block content %}
-<header class="header"><h1 class="left-title">資産</h1></header>
+<header class="header"><h1 class="left-title">資産</h1>
+  <a class="icon-btn" href="{% url 'reports:trend_assets' %}" aria-label="資産の推移">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+  </a>
+</header>
 <div class="summary3">
   <div><div class="cap">資産</div><div class="val num income">{% yen summary.assets %}</div></div>
   <div><div class="cap">負債</div><div class="val num expense">{% yen summary.liabilities %}</div></div>

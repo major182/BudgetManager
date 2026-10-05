@@ -17,4 +17,5 @@ urlpatterns = [
     path("", include("ledger.urls")),
     path("", include("reports.urls")),
     path("", include("masters.urls")),
+    path("", include("budgets.urls")),
 ]

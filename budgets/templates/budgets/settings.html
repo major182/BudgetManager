@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{# SC-11 予算設定（画面設計書 4.12） #}
+{% load budget %}
+{% block title %}予算{% endblock %}
+{% block content %}
+{% include "masters/_back_header.html" with heading="予算" %}
+
+{# 基本額（毎月）。空欄にすると、その予算を削除する（月ごとの額も一緒に消える） #}
+<form method="post" class="form">
+  {% csrf_token %}
+  <input type="hidden" name="_form" value="base">
+  <div class="list-caption">基本額（毎月）。空欄は予算なしです。</div>
+  {% for field in base_form %}{% include "core/_field.html" %}{% endfor %}
+  <div class="btn-row"><button type="submit" class="btn primary block">保存</button></div>
+</form>
+
+{# 月ごとの予算。空欄の月は基本額を使う。基本額のある予算だけ入力できる #}
+<section class="section">
+  <h2>月ごとの予算</h2>
+  <div class="period-bar">
+    <a class="icon-btn" href="?month={{ prev_month|date:'Y-m' }}" aria-label="前の月">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+    </a>
+    <div class="period"><span class="label">{{ month_label }}</span></div>
+    <a class="icon-btn" href="?month={{ next_month|date:'Y-m' }}" aria-label="次の月">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+  </div>
+  {% if month_rows %}
+  <form method="post" action="?month={{ month|date:'Y-m' }}">
+    {% csrf_token %}
+    <input type="hidden" name="_form" value="month">
+    {% for row in month_rows %}
+    {% with field=row.field %}
+    <div class="field">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      <div class="with-btn">
+        <input type="text" name="{{ field.html_name }}" id="{{ field.id_for_label }}" class="input amount" inputmode="numeric"
+          value="{{ field.value|default_if_none:'' }}" placeholder="{{ row.base|comma }}">
+        {% if row.has_value %}
+        <button type="submit" class="btn ghost" name="_reset" value="{{ field.name }}">基本額に戻す</button>
+        {% endif %}
+      </div>
+      {% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+    </div>
+    {% endwith %}
+    {% endfor %}
+    <p class="list-caption">空欄の月は、基本額（薄く表示している額）を使います。</p>
+    <div class="btn-row"><button type="submit" class="btn primary block">保存</button></div>
+  </form>
+  {% else %}
+  <p class="muted small">基本額を設定すると、月ごとの額を変えられます。</p>
+  {% endif %}
+</section>
+{% endblock %}
