@@ -48,7 +48,7 @@
     <span class="sub">{% if tx.description %}{{ tx.description }}　{% endif %}{% if tx.kind == "transfer" %}{{ tx.asset }} → {{ tx.transfer_to_asset }}{% endif %}</span>
     {# この資産から見た増減。振替は灰色、入金は青、出金は赤（画面設計書 1.2） #}
     <span class="amt num {% if tx.kind == 'transfer' %}transfer{% elif row.delta >= 0 %}income{% else %}expense{% endif %}">{% yen row.delta %}</span>
-    <span class="sub num {{ row.after|signed_class }}">残高 {% yen row.after %}</span>
+    <span class="sub side num {{ row.after|signed_class }}">残高 {% yen row.after %}</span>
   </button>
   {% endwith %}
   {% endfor %}

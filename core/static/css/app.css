@@ -428,6 +428,17 @@ textarea {
   font-weight: 600;
 }
 
+/* 金額の下に右寄せで出す補足（資産詳細の「残高」。画面設計書 4.7） */
+.row .sub.side {
+  grid-column: 2;
+  grid-row: 2;
+  text-align: right;
+}
+
+.row:has(.side) .amt {
+  grid-row: 1;
+}
+
 .badge {
   display: inline-block;
   margin-left: 6px;
@@ -455,6 +466,16 @@ textarea {
   .row .amt {
     grid-column: 3;
     grid-row: 1;
+  }
+
+  /* 2つ目の補足は、1つ目の下に出す（定期収支の「次回」。画面設計書 4.13） */
+  .row .sub ~ .sub {
+    grid-row: 2;
+  }
+
+  .row .sub.side {
+    grid-column: 3;
+    grid-row: 2;
   }
 }
 
@@ -644,6 +665,28 @@ textarea.input {
 .input:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+/* 日付欄：元の表示を隠し、app.js が「2026/10/01」の形の文字を重ねる */
+.date-wrap {
+  position: relative;
+  display: block;
+}
+
+.date-wrap input[type="date"]::-webkit-datetime-edit {
+  opacity: 0;
+}
+
+.date-text {
+  position: absolute;
+  top: 50%;
+  left: 11px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.date-text.empty {
+  color: var(--text-muted);
 }
 
 .input.amount {
@@ -1207,7 +1250,7 @@ dialog::backdrop {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.range.dates > span {
+.range.dates > span:not(.date-wrap) {
   display: none;
 }
 
@@ -1216,12 +1259,13 @@ dialog::backdrop {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   }
 
-  .range.dates > span {
+  .range.dates > span:not(.date-wrap) {
     display: inline;
   }
 }
 
-.range .input {
+.range .input,
+.range .date-wrap {
   min-width: 0;
 }
 

@@ -134,6 +134,44 @@
   }
   document.addEventListener("DOMContentLoaded", () => applyDependsOn(document));
 
+  // ---------------------------------------------------------------- 日付の表示
+  // Chrome の日付欄は、表示の形を端末（Windows）の「短い日付の形式」に合わせる。
+  // 曜日を含む形だと、曜日が出ずに「2026/10/01 ()」と表示されるため、
+  // 元の表示を隠し、上に「2026/10/01」の形で重ねて表示する（画面設計書 1.3）
+  function formatDate(value) {
+    return value ? value.replaceAll("-", "/") : "年/月/日";
+  }
+  function applyDateText(root) {
+    root.querySelectorAll('input[type="date"]:not([data-date-text])').forEach((input) => {
+      input.dataset.dateText = "1";
+      const wrap = document.createElement("span");
+      wrap.className = "date-wrap";
+      input.before(wrap);
+      wrap.append(input);
+      const text = document.createElement("span");
+      text.className = "date-text";
+      text.setAttribute("aria-hidden", "true");
+      wrap.append(text);
+      const update = () => {
+        text.textContent = formatDate(input.value);
+        text.classList.toggle("empty", !input.value);
+      };
+      input.addEventListener("input", update);
+      input.addEventListener("change", update);
+      // 元の表示が隠れているため、欄のどこを押してもカレンダーを開く
+      input.addEventListener("click", () => {
+        try {
+          input.showPicker();
+        } catch {
+          // 開けないときは、何もしない
+        }
+      });
+      update();
+    });
+  }
+  document.addEventListener("DOMContentLoaded", () => applyDateText(document));
+  document.addEventListener("htmx:load", (event) => applyDateText(event.target));
+
   // ---------------------------------------------------------------- 分類の既定の税率（BR-78・79）
   // 定期収支の小窓で分類を選んだら、その分類の既定の税率にする。
   // 対応表（分類の id → 税率の id）は、テンプレートが json_script（id="default-rates"）で埋め込む
