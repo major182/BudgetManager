@@ -1,0 +1,11 @@
+{% load budget %}
+{# 入力の補完の候補（F-TX-05）。選ぶと、その内容で最後に登録した明細の資産・分類・税率・金額を入れる #}
+{% if candidates %}
+<ul role="listbox">
+  {% for tx in candidates %}
+  <li><button type="submit" class="link" name="_action" value="apply:{{ tx.pk }}">
+    {{ tx.description }}<small>{% with line=tx.lines.all.0 %}{% if line %}{{ line.category }}・{% endif %}{% endwith %}{% yen tx.amount %}</small>
+  </button></li>
+  {% endfor %}
+</ul>
+{% endif %}

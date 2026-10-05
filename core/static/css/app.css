@@ -1324,3 +1324,47 @@ button:disabled {
 [hidden] {
   display: none !important;
 }
+
+/* ---- 明細入力（画面設計書 4.2） ---- */
+/* 税込・税抜の切り替え：ラジオボタンを、押せる区切りの見た目にする */
+.seg-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.seg-item input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.seg-item:has(input:checked) {
+  background: var(--surface-3);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.seg-item:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+}
+
+.small {
+  margin: 0;
+  font-size: 13px;
+}
+
+.suggest ul button {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+#suggest:empty {
+  display: none;
+}
