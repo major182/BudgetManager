@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{# SC-03 検索（画面設計書 4.3） #}
+{% load budget %}
+{% block title %}検索{% endblock %}
+{% block content %}
+<header class="header">
+  <a class="icon-btn" href="{% url 'core:top' %}" aria-label="戻る">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+  </a>
+  <h1>明細の検索</h1><span class="header-spacer"></span>
+</header>
+<form method="get" class="form search-form">
+  {% include "core/_field.html" with field=form.q %}
+  {% include "core/_field.html" with field=form.kind %}
+  {% include "core/_field.html" with field=form.category %}
+  {% include "core/_field.html" with field=form.asset %}
+  <div class="field"><span class="label">金額</span>
+    <div class="range">{{ form.amount_min }}<span class="muted">〜</span>{{ form.amount_max }}</div>
+    {% for e in form.amount_min.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+    {% for e in form.amount_max.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+  </div>
+  <div class="field"><span class="label">期間</span>
+    <div class="range dates">{{ form.date_from }}<span class="muted">〜</span>{{ form.date_until }}</div>
+    {% for e in form.date_from.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+    {% for e in form.date_until.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+  </div>
+  <div class="btn-row"><button class="btn primary block" type="submit">検索</button></div>
+</form>
+{% if form.is_valid %}
+<div class="result-head">
+  <span>{{ count }}件</span>
+  <span>収入 <span class="income num">{% yen totals.income %}</span></span>
+  <span>支出 <span class="{{ totals.expense|expense_class }} num">{% yen totals.expense %}</span></span>
+</div>
+{% if count %}<div id="results">{% include "ledger/_search_results.html" %}</div>
+{% else %}<div class="empty">条件に合う明細はありません。</div>{% endif %}
+{% endif %}
+{% include "core/_modal_frame.html" %}
+{% endblock %}

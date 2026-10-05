@@ -1,0 +1,24 @@
+{% extends "ledger/_ledger_base.html" %}
+{# SC-01 家計簿：カレンダー（F-LS-02）。各日に収入・支出の合計。1万円以上は「3.2万」のように縮める #}
+{% load budget %}
+{% block body %}
+<div class="cal">
+  <div class="cal-grid">
+    {% for w in weekday_labels %}<div class="wd{% if w == '土' %} sat{% elif w == '日' %} sun{% endif %}">{{ w }}</div>{% endfor %}
+    {% for week in weeks %}{% for cell in week %}
+    <a class="cal-cell{% if not cell.in_period %} out{% endif %}{% if cell.date.weekday == 5 %} sat{% elif cell.date.weekday == 6 or cell.holiday %} sun{% endif %}{% if cell.date == today %} today{% endif %}"
+      href="?date={{ cell.date|date:'Y-m-d' }}" aria-selected="{% if cell.date == selected %}true{% else %}false{% endif %}">
+      <span class="n">{{ cell.date.day }}</span>
+      {% if cell.totals.income %}<span class="income num">{{ cell.totals.income|short_yen }}</span>{% endif %}
+      {% if cell.totals.expense %}<span class="{{ cell.totals.expense|expense_class }} num">{{ cell.totals.expense|short_yen }}</span>{% endif %}
+    </a>
+    {% endfor %}{% endfor %}
+  </div>
+</div>
+<div class="list-caption">{{ selected|date:"n/j" }}（{{ selected|date:"D" }}）の明細</div>
+{% if day %}
+  {% for d in day %}<section class="day">{% for tx in d.transactions %}{% include "ledger/_tx_row.html" %}{% endfor %}</section>{% endfor %}
+{% else %}
+  <div class="empty">この日の明細はありません。</div>
+{% endif %}
+{% endblock %}

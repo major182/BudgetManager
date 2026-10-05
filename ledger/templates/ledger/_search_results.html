@@ -1,0 +1,7 @@
+{# 検索の結果（50 件ずつ）。「さらに表示」で次の 50 件をこの下に足す #}
+{% for day in days %}<section class="day">{% for tx in day.transactions %}{% include "ledger/_tx_row.html" with show_date=True %}{% endfor %}</section>{% endfor %}
+{% if next_page %}
+<div class="btn-row" id="more">
+  <button class="btn block" hx-get="?{{ query.urlencode }}&amp;page={{ next_page }}" hx-target="#more" hx-swap="outerHTML">さらに表示</button>
+</div>
+{% endif %}

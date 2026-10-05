@@ -6,10 +6,11 @@ URL の割り当て（画面設計書 3章）。
 
 from django.urls import include, path, register_converter
 
-from core.converters import YearMonthConverter
+from core.converters import YearConverter, YearMonthConverter
 
 # URL の中の `2026-10` を、その月の1日の日付として受け取る
 register_converter(YearMonthConverter, "ym")
+register_converter(YearConverter, "yr")
 
 urlpatterns = [
     path("", include("core.urls")),

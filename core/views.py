@@ -4,11 +4,12 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from core.periods import month_containing
+
 
 def top(request: HttpRequest) -> HttpResponse:
-    """トップは今月の家計簿（日別）へ移る。"""
-    today = timezone.localdate()
-    return redirect("ledger:daily", year_month=today.replace(day=1))
+    """トップは今月（今日を含む月。DB 設計書 5.2）の家計簿（日別）へ移る。"""
+    return redirect("ledger:daily", year_month=month_containing(timezone.localdate()).month)
 
 
 def settings_menu(request: HttpRequest) -> HttpResponse:

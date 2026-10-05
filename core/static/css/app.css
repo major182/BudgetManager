@@ -1368,3 +1368,41 @@ button:disabled {
 #suggest:empty {
   display: none;
 }
+
+/* ---- 家計簿・検索（画面設計書 4.1・4.3） ---- */
+/* 明細の行はボタン（押すと編集の小窓を開く） */
+button.row {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+/* 年月の見出しを押すと、月を選ぶ入力が開く（F-LS-05） */
+.month-pick {
+  position: relative;
+  cursor: pointer;
+}
+
+.month-pick input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+a.cal-cell {
+  color: inherit;
+}
+
+.small-inline {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.search-form {
+  padding-bottom: 0;
+}
