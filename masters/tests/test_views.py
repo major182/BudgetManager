@@ -1,9 +1,12 @@
 """設定画面のテスト（テスト仕様書 4.2）。htmx の通信と同じ形でリクエストを送る。"""
 
+from datetime import date
+
 import pytest
 from django.test import Client
 
 from core.models import AppSettings
+from ledger import services
 from masters.models import Asset, AssetGroup, Category, TaxRate
 
 pytestmark = pytest.mark.django_db
@@ -71,6 +74,23 @@ def test_既定の税率は非表示にできない(client: Client) -> None:
         headers=HTMX,
     ).content.decode()
     assert "既定の税率に設定されている税率は、非表示にできません。" in html  # MSG-E23
+
+
+def test_使われている税率の編集では金額が変わらないことを知らせる(client: Client) -> None:
+    rate = TaxRate.objects.get(name="軽減税率 8%")
+    url = f"/settings/tax-rates/{rate.pk}/edit/"
+    message = "税率の値を変えても、登録済みの明細の金額は変わりません。"  # MSG-W02
+    assert message not in client.get(url, headers=HTMX).content.decode()
+    services.save(
+        {
+            "kind": "expense",
+            "date": date(2026, 10, 15),
+            "asset": Asset.objects.get(name="現金"),
+            "amount_input_type": "tax_included",
+        },
+        [services.LineData(Category.objects.get(kind="expense", name="食費"), rate, 1080)],
+    )
+    assert message in client.get(url, headers=HTMX).content.decode()
 
 
 def test_小分類を追加する(client: Client) -> None:

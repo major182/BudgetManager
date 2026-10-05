@@ -25,7 +25,14 @@ from django.views.decorators.http import require_POST
 from core.choices import CategoryKind
 from core.models import AppSettings
 from masters import services
-from masters.forms import AppSettingsForm, AssetForm, AssetGroupForm, CategoryForm, TaxRateForm
+from masters.forms import (
+    MSG_W02,
+    AppSettingsForm,
+    AssetForm,
+    AssetGroupForm,
+    CategoryForm,
+    TaxRateForm,
+)
 from masters.models import Asset, AssetGroup, Category, TaxRate
 from masters.services import Master
 
@@ -130,6 +137,10 @@ def _modal(
             if obj
             else "",
             "error": error,
+            # 明細で使われている税率は、値を変えても明細の金額が変わらないことを知らせる（BR-76）
+            "warning": MSG_W02
+            if isinstance(obj, TaxRate) and obj.transaction_lines.exists()
+            else "",
         },
     )
 
