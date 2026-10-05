@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{# 存在しない URL・削除済みのデータ（MSG-S02） #}
+{% block title %}ページが見つかりません{% endblock %}
+{% block content %}
+<div class="error-page">
+  <h1>ページが見つかりません。</h1>
+  <p>URL を確かめるか、メニューから画面を選んでください。</p>
+  <a class="btn primary" href="/">家計簿へ</a>
+</div>
+{% endblock %}

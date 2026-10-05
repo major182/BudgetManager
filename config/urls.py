@@ -1,10 +1,18 @@
 """
-URL の割り当て。
+URL の割り当て（画面設計書 3章）。
 
 管理画面（/admin/）はログインがないため登録しない（技術選定書 7.2 S-06）。
-画面を作り始めたら、ここに各画面の URL を追加する。
 """
 
-from django.urls import URLPattern, URLResolver
+from django.urls import include, path, register_converter
 
-urlpatterns: list[URLPattern | URLResolver] = []
+from core.converters import YearMonthConverter
+
+# URL の中の `2026-10` を、その月の1日の日付として受け取る
+register_converter(YearMonthConverter, "ym")
+
+urlpatterns = [
+    path("", include("core.urls")),
+    path("", include("ledger.urls")),
+    path("", include("reports.urls")),
+]

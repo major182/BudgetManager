@@ -22,6 +22,8 @@ def test_mysql_84_に接続できる() -> None:
     assert version.startswith("8.4.")
 
 
+# 404 の画面は設定（テーマ）を DB から読むため、DB を使う
+@pytest.mark.django_db
 def test_管理画面は公開しない(client: Client) -> None:
     # 技術選定書 7.2 S-06：ログインがないため /admin/ を登録しない
     response = client.get("/admin/")

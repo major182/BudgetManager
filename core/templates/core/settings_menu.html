@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{# SC-08 設定：各設定画面への入口（画面設計書 4.8） #}
+{% block title %}設定{% endblock %}
+{% block content %}
+<header class="header"><h1 class="left-title">設定</h1></header>
+<div class="menu-list menu-group">
+  <a href="/settings/categories/">分類</a>
+  <a href="/settings/assets/">資産</a>
+  <a href="/settings/budgets/">予算</a>
+  <a href="/settings/recurring/">定期収支</a>
+  <a href="/settings/tax-rates/">税率</a>
+</div>
+<div class="menu-list menu-group">
+  <a href="/settings/csv/">CSV 出力・取り込み</a>
+  <a href="/settings/display/">表示設定</a>
+</div>
+{% endblock %}

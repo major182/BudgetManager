@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{# SC-01 家計簿（画面設計書 4.1）。明細の一覧は Issue 5 で実装する #}
+{% load budget %}
+{% block title %}家計簿{% endblock %}
+{% block content %}
+{% include "core/_period_header.html" %}
+<div class="totals">
+  <div><div class="cap">収入</div><div class="val num income">{% yen 0 %}</div></div>
+  <div><div class="cap">支出</div><div class="val num expense">{% yen 0 %}</div></div>
+  <div><div class="cap">合計</div><div class="val num">{% yen 0 %}</div></div>
+</div>
+<div class="empty">この期間の明細はありません。</div>
+{% endblock %}
