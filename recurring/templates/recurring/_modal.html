@@ -1,0 +1,43 @@
+{# 定期収支の入力の小窓（画面設計書 4.13）。種類・周期に合わせて欄を出し分ける #}
+<form hx-post="{{ action }}" hx-target="#modal-body" class="modal-form">
+  <header class="header">
+    <button type="button" class="icon-btn" data-close-modal aria-label="閉じる">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <h1>{% if item %}定期収支の編集{% else %}定期収支の追加{% endif %}</h1>
+    <button type="submit" class="btn primary">{% if item %}保存{% else %}登録{% endif %}</button>
+  </header>
+  <div class="form">
+    {% for error in form.non_field_errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+    {% include "core/_field.html" with field=form.kind %}
+    {% include "core/_field.html" with field=form.asset %}
+    {% include "core/_field.html" with field=form.transfer_to_asset depends_on="id_kind" depends_value="transfer" %}
+    {% include "core/_field.html" with field=form.category depends_on="id_kind" depends_value="expense income" %}
+    {{ default_rates|json_script:"default-rates" }}
+    {% include "core/_field.html" with field=form.tax_rate depends_on="id_kind" depends_value="expense income" %}
+    {% include "core/_field.html" with field=form.amount_input_type depends_on="id_kind" depends_value="expense income" %}
+    {% include "core/_field.html" with field=form.amount %}
+    {% include "core/_field.html" with field=form.description %}
+    {% include "core/_field.html" with field=form.memo %}
+    {% include "core/_field.html" with field=form.frequency %}
+    {% include "core/_field.html" with field=form.day_of_month depends_on="id_frequency" depends_value="monthly yearly" %}
+    {% include "core/_field.html" with field=form.weekday depends_on="id_frequency" depends_value="weekly" %}
+    {% include "core/_field.html" with field=form.month depends_on="id_frequency" depends_value="yearly" %}
+    {% include "core/_field.html" with field=form.holiday_rule %}
+    {% include "core/_field.html" with field=form.start_date %}
+    {% include "core/_field.html" with field=form.end_date %}
+    {% if past_start %}<p class="list-caption">登録日より前の回は、自動では登録されません。必要な場合は、明細として入力してください。</p>{% endif %}
+    {# 入力中に、次回の登録予定日（土日祝日の調整後）を出す #}
+    <div class="section" id="preview"
+      hx-post="{% url 'recurring:preview' %}" hx-trigger="load, change from:closest form" hx-include="closest form" hx-target="this">
+    </div>
+    {% if item %}
+    <p class="list-caption">削除しても、登録済みの明細は消えません。</p>
+    <div class="btn-row">
+      <button type="button" class="btn danger" hx-post="{% url 'recurring:delete' pk=item.pk %}" hx-target="#modal-body"
+        hx-confirm="定期収支「{% firstof item.description item.category '振替' %}」を削除しますか？登録済みの明細は削除されません。"
+        data-confirm-ok="削除する">削除</button>
+    </div>
+    {% endif %}
+  </div>
+</form>

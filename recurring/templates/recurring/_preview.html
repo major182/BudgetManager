@@ -1,0 +1,4 @@
+{# 次回の登録予定日（画面設計書 4.13） #}
+{% if when %}<p class="small">次回の登録予定日：<strong>{{ when|date:"Y/n/j" }}（{{ when|date:"D" }}）</strong></p>
+{% elif valid %}<p class="small muted">次回の登録予定日はありません（終了日を過ぎています）。</p>
+{% else %}<p class="small muted">入力をそろえると、次回の登録予定日を表示します。</p>{% endif %}

@@ -117,20 +117,34 @@
   });
 
   // ---------------------------------------------------------------- 項目の出し分け
-  // data-depends-on="チェックボックスの id" を付けた項目は、チェックが入っているときだけ表示する
-  // （例：クレジットカードのときだけ締め日などを出す。画面設計書 4.11）
+  // data-depends-on="入力欄の id" を付けた項目は、条件に合うときだけ表示する
+  // - チェックボックス：チェックが入っているとき（例：クレジットカードのときだけ締め日などを出す。画面設計書 4.11）
+  // - 選択欄：値が data-depends-value（空白区切り）のどれかのとき（例：毎週なら曜日を出す。画面設計書 4.13）
   function applyDependsOn(root) {
     root.querySelectorAll("[data-depends-on]").forEach((el) => {
       const box = document.getElementById(el.dataset.dependsOn);
       if (!box) return;
+      const values = (el.dataset.dependsValue || "").split(" ").filter(Boolean);
       const update = () => {
-        el.hidden = !box.checked;
+        el.hidden = values.length ? !values.includes(box.value) : !box.checked;
       };
       box.addEventListener("change", update);
       update();
     });
   }
   document.addEventListener("DOMContentLoaded", () => applyDependsOn(document));
+
+  // ---------------------------------------------------------------- 分類の既定の税率（BR-78・79）
+  // 定期収支の小窓で分類を選んだら、その分類の既定の税率にする。
+  // 対応表（分類の id → 税率の id）は、テンプレートが json_script（id="default-rates"）で埋め込む
+  document.body.addEventListener("change", (event) => {
+    if (event.target.id !== "id_category") return;
+    const table = document.getElementById("default-rates");
+    const rate = document.getElementById("id_tax_rate");
+    if (!table || !rate) return;
+    const value = JSON.parse(table.textContent)[event.target.value];
+    if (value) rate.value = value;
+  });
 
   // ---------------------------------------------------------------- 電卓（F-TX-06、画面設計書 4.2）
   // 四則演算の結果を金額の欄に入れる。結果の小数点以下は切り捨てる（金額は円の整数。BR-02）

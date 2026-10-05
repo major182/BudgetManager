@@ -1,6 +1,6 @@
 {# フォームの1項目（画面設計書 1.5）。誤りは入力欄のすぐ下に赤字で出す #}
 {% if field.is_hidden %}{{ field }}{% else %}
-<div class="field"{% if depends_on %} data-depends-on="{{ depends_on }}"{% endif %}>
+<div class="field"{% if depends_on %} data-depends-on="{{ depends_on }}"{% endif %}{% if depends_value %} data-depends-value="{{ depends_value }}"{% endif %}>
   {% if field.widget_type == "checkbox" %}
     <span class="label"></span>
     <label class="check">{{ field }} {{ field.label }}</label>
