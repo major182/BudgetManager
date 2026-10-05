@@ -18,3 +18,9 @@ def yen(context: dict[str, Any], value: int) -> str:
     """
     settings: AppSettings = context["app_settings"]
     return format_yen(value, settings.currency_symbol, settings.use_thousands_separator)
+
+
+@register.filter
+def comma(value: int) -> str:
+    """数値に桁区切りを付ける（通貨記号なし。税額の表など）。マイナスは「-」を付ける。"""
+    return f"{value:,}"

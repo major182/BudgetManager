@@ -1,0 +1,15 @@
+{% load budget %}
+{# 税額の表（画面設計書 4.2、F-TX-08）。tax は ledger.tax.calculate の結果 #}
+{% if tax %}
+<table class="tax-table num">
+  <thead><tr><th></th><th>税抜</th><th>税</th><th>税込</th></tr></thead>
+  <tbody>
+    {% for rate, amounts in tax.by_rate %}
+    <tr><td>{{ rate|floatformat:"-1" }}%</td><td>{{ amounts.excl|comma }}</td><td>{{ amounts.tax|comma }}</td><td>{{ amounts.incl|comma }}</td></tr>
+    {% endfor %}
+    <tr class="total"><td>合計</td><td>{{ tax.total.excl|comma }}</td><td>{{ tax.total.tax|comma }}</td><td>{{ tax.total.incl|comma }}</td></tr>
+  </tbody>
+</table>
+{% else %}
+<p class="muted small">金額を入力すると、税額を計算して表示します。</p>
+{% endif %}

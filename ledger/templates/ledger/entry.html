@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{# SC-02 明細入力を画面全体で開いたとき（URL を直接開いた場合。画面設計書 1.7）。メニューは隠す #}
+{% block title %}{% if instance %}明細の編集{% else %}明細の登録{% endif %}{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}{% include "ledger/_entry.html" %}{% endblock %}

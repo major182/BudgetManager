@@ -1,0 +1,122 @@
+{% load budget %}
+{# SC-02 明細入力のフォーム（画面設計書 4.2）。入力中の操作はこのフォームごとサーバーに送り、描き直す #}
+<form id="entry-form" class="entry" hx-post="{{ action }}" hx-target="this" hx-swap="outerHTML" data-entry>
+  <input type="hidden" name="_modal" value="{% if in_modal %}1{% endif %}">
+  {{ form.kind }}
+  {{ lines.management_form }}
+
+  <header class="header">
+    {% if in_modal %}
+    <button type="button" class="icon-btn" data-close-modal data-confirm-discard aria-label="閉じる">
+    {% else %}
+    <a class="icon-btn" href="{% url 'core:top' %}" data-confirm-discard aria-label="閉じる">
+    {% endif %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    {% if in_modal %}</button>{% else %}</a>{% endif %}
+    <h1>{% if instance %}明細の編集{% else %}明細の登録{% endif %}</h1>
+    <button type="submit" name="_action" value="save" class="btn primary">{% if instance %}保存{% else %}登録{% endif %}</button>
+  </header>
+
+  {# 種類（BR-10）。切り替えると入力欄が変わる #}
+  <div class="tabs" role="tablist">
+    {% for value, label in kinds %}
+    <button type="submit" role="tab" name="_action" value="kind:{{ value }}" aria-selected="{% if value == kind %}true{% else %}false{% endif %}">{{ label }}</button>
+    {% endfor %}
+  </div>
+
+  {% if show_errors %}
+    {% for error in form.non_field_errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+    {% for error in lines.non_form_errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+    {% if form.errors or lines.total_error_count %}<p class="form-error" role="alert">入力に誤りがあります。赤字の項目を確かめてください。</p>{% endif %}
+  {% endif %}
+
+  <div class="form">
+    {% include "ledger/_entry_field.html" with field=form.date %}
+    {% if kind == "transfer" %}
+      {% include "ledger/_entry_field.html" with field=form.asset label="出金元" %}
+      {% include "ledger/_entry_field.html" with field=form.transfer_to_asset %}
+      {% include "ledger/_entry_field.html" with field=form.amount calc=True %}
+    {% else %}
+      {% include "ledger/_entry_field.html" with field=form.asset %}
+    {% endif %}
+
+    {# 内容と入力の補完（F-TX-05）：入力した文字で始まる過去の内容を候補に出す #}
+    <div class="field">
+      <label for="{{ form.description.id_for_label }}">内容</label>
+      <div class="suggest">
+        <input type="text" name="description" id="{{ form.description.id_for_label }}" class="input"
+          value="{{ form.description.value|default_if_none:'' }}" maxlength="100" autocomplete="off" placeholder="例：スーパー"
+          hx-get="{% url 'ledger:suggest' %}" hx-trigger="input changed delay:300ms" hx-target="#suggest" hx-include="[name='kind']" hx-sync="this:replace">
+        <div id="suggest"></div>
+      </div>
+      {% if show_errors %}{% for error in form.description.errors %}<div class="field-error">{{ error }}</div>{% endfor %}{% endif %}
+    </div>
+
+    {% if kind != "transfer" %}
+    {# 金額を税込・税抜のどちらで入れるか（BR-72） #}
+    <div class="field">
+      <span class="label">金額の入力</span>
+      <div><span class="seg">
+        {% for radio in form.amount_input_type %}
+        <label class="seg-item">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+        {% endfor %}
+      </span></div>
+    </div>
+
+    {% for line in lines.forms %}
+    <div class="line">
+      <div class="line-head">
+        <span>内訳{{ forloop.counter }}</span>
+        {% if not forloop.first %}
+        <button type="submit" class="icon-btn" name="_action" value="remove:{{ forloop.counter0 }}" aria-label="内訳{{ forloop.counter }}を削除">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+        {% endif %}
+      </div>
+      <div class="field">
+        <label for="{{ line.category.id_for_label }}">分類<span class="req">必須</span></label>
+        {# 分類を選ぶと、その分類の既定の税率にする（BR-78） #}
+        <select name="{{ line.category.html_name }}" id="{{ line.category.id_for_label }}" class="input"
+          hx-post="{{ action }}" hx-trigger="change" hx-target="#entry-form" hx-swap="outerHTML"
+          hx-include="#entry-form" hx-vals='{"_action": "category:{{ forloop.counter0 }}"}'>
+          {% for value, label in line.category.field.choices %}
+          <option value="{{ value }}"{% if value|stringformat:"s" == line.category.value|stringformat:"s" %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {% if show_errors %}{% for error in line.category.errors %}<div class="field-error">{{ error }}</div>{% endfor %}{% endif %}
+      </div>
+      {% include "ledger/_entry_field.html" with field=line.tax_rate %}
+      {% include "ledger/_entry_field.html" with field=line.amount calc=True %}
+    </div>
+    {% endfor %}
+    {% if lines.forms|length < 20 %}
+    <button type="submit" class="btn add-line" name="_action" value="add_line">＋ 内訳を追加</button>
+    {% endif %}
+
+    {# 税額の表（F-TX-08）。入力のたびにサーバーで計算する #}
+    <div class="section" id="tax-table"
+      hx-post="{% url 'ledger:tax_table' %}" hx-trigger="input from:#entry-form delay:300ms, change from:#entry-form"
+      hx-include="#entry-form" hx-target="this" hx-swap="innerHTML">
+      {% include "ledger/_tax_table.html" %}
+    </div>
+    {% endif %}
+
+    {% include "ledger/_entry_field.html" with field=form.memo %}
+    {% if kind == "expense" %}<p class="list-caption">返品・払い戻しは、金額をマイナスで入力します。</p>{% endif %}
+
+    {% if instance %}
+    <div class="btn-row">
+      <button type="button" class="btn danger"
+        hx-post="{% url 'ledger:delete' pk=instance.pk %}" hx-include="[name='_modal']"
+        hx-confirm="「{{ instance.date|date:'n/j' }} {{ instance.description }} {% yen instance.amount %}」を削除しますか？この操作は取り消せません。"
+        data-confirm-ok="削除する">削除</button>
+      <span class="spacer"></span>
+      {% if in_modal %}
+      <button type="button" class="btn" hx-get="{% url 'ledger:copy' pk=instance.pk %}?modal=1" hx-target="#modal-body">コピー</button>
+      {% else %}
+      <a class="btn" href="{% url 'ledger:copy' pk=instance.pk %}">コピー</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</form>
