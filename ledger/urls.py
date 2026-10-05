@@ -1,6 +1,6 @@
 from django.urls import path
 
-from ledger import views
+from ledger import csv_views, views
 
 app_name = "ledger"
 
@@ -17,6 +17,11 @@ urlpatterns = [
     path("transactions/<int:pk>/edit/", views.edit, name="edit"),
     path("transactions/<int:pk>/copy/", views.copy, name="copy"),
     path("transactions/<int:pk>/delete/", views.delete, name="delete"),
+    # SC-13 CSV 出力・取り込み
+    path("settings/csv/", csv_views.page, name="csv"),
+    path("settings/csv/export/", csv_views.export, name="csv_export"),
+    path("settings/csv/check/", csv_views.check, name="csv_check"),
+    path("settings/csv/import/", csv_views.run, name="csv_run"),
     # 入力中に htmx が呼ぶもの
     path("transactions/tax-table/", views.tax_table, name="tax_table"),
     path("transactions/suggest/", views.suggest, name="suggest"),

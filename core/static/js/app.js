@@ -244,6 +244,17 @@
     if (input) openCalculator(input);
   });
 
+  // ---------------------------------------------------------------- CSV の取り込みの確認（MSG-C04）
+  document.body.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-confirm-csv]");
+    if (!button || button.dataset.confirmed) return;
+    event.preventDefault();
+    if (await confirmDialog(button.dataset.confirmCsv, "取り込む", "キャンセル")) {
+      button.dataset.confirmed = "1";
+      button.form.requestSubmit(button);
+    }
+  });
+
   // ---------------------------------------------------------------- 通信のエラー（画面設計書 6.6）
   // サーバーのエラー（MSG-S01）
   document.body.addEventListener("htmx:responseError", (event) => {

@@ -1475,3 +1475,26 @@ a.budget {
 .small-label {
   font-size: 14px;
 }
+
+/* ---- CSV 出力・取り込み（画面設計書 4.14） ---- */
+.csv-form .field {
+  padding: 4px 0;
+  background: none;
+}
+
+.error-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  font-size: 13px;
+}
+
+.confirm-box {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.confirm-box p {
+  margin: 0 0 8px;
+}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{# SC-13 CSV 出力・取り込み（画面設計書 4.14・5章） #}
+{% block title %}CSV 出力・取り込み{% endblock %}
+{% block content %}
+{% include "masters/_back_header.html" with heading="CSV 出力・取り込み" %}
+
+{# 出力（F-IO-01）：月（月の開始日に従う期間）または年 #}
+<section class="section">
+  <h2>出力</h2>
+  <form method="get" action="{% url 'ledger:csv_export' %}" class="csv-form">
+    <input type="hidden" name="unit" value="month">
+    <label class="field"><span class="label">月</span>
+      <input type="month" name="month" class="input" value="{{ month|date:'Y-m' }}" required></label>
+    <div class="btn-row"><button type="submit" class="btn primary block">月の分を出力</button></div>
+  </form>
+  <form method="get" action="{% url 'ledger:csv_export' %}" class="csv-form">
+    <input type="hidden" name="unit" value="year">
+    <label class="field"><span class="label">年</span>
+      <input type="number" name="year" class="input" value="{{ month.year }}" min="2000" max="2100" inputmode="numeric" required></label>
+    <div class="btn-row"><button type="submit" class="btn block">年の分を出力</button></div>
+  </form>
+  <p class="list-caption">ファイル名は budget_2026-10.csv（月）、budget_2026.csv（年）です。Excel でそのまま開けます。</p>
+</section>
+
+{# 取り込み（F-IO-02）：「確認」→「取り込む」の2段階 #}
+<section class="section">
+  <h2>取り込み</h2>
+  <form method="post" action="{% url 'ledger:csv_check' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="file" accept=".csv,text/csv" class="input" aria-label="CSV ファイル">
+    <div class="btn-row"><button type="submit" class="btn block">確認</button></div>
+  </form>
+  <p class="list-caption">2MB・5,000 行までのファイルを取り込めます。出力した CSV と同じ見出しにしてください。</p>
+
+  {% if errors %}
+  <div class="form-error" role="alert">
+    <p class="small"><strong>誤りがあるため、取り込めません。</strong>直してから、もう一度「確認」してください。</p>
+    <ul class="error-list">{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+
+  {% if result %}
+  <div class="confirm-box">
+    <p>{{ result.transactions|length }}件の明細（{{ result.date_range.0|date:"Y/n/j" }}〜{{ result.date_range.1|date:"Y/n/j" }}）</p>
+    <form method="post" action="{% url 'ledger:csv_run' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn primary block"
+        data-confirm-csv="{{ result.transactions|length }}件の明細（{{ result.date_range.0|date:'Y/n/j' }}〜{{ result.date_range.1|date:'Y/n/j' }}）を取り込みます。同じファイルを2回取り込むと、明細も2回登録されます。">取り込む</button>
+    </form>
+    <p class="list-caption">同じファイルを2回取り込むと、明細も2回登録されます。</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
