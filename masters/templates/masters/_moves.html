@@ -1,0 +1,11 @@
+{# ↑↓ の並べ替え（画面設計書 4.9）。一覧の画面へ戻し、一覧の部分（#master-list）だけを差し替える #}
+<span class="moves">
+  <button class="icon-btn" aria-label="上へ"
+    hx-post="{% url 'masters:move' kind=kind pk=pk direction='up' %}" hx-target="#master-list" hx-select="#master-list" hx-swap="outerHTML">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+  </button>
+  <button class="icon-btn" aria-label="下へ"
+    hx-post="{% url 'masters:move' kind=kind pk=pk direction='down' %}" hx-target="#master-list" hx-select="#master-list" hx-swap="outerHTML">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+</span>

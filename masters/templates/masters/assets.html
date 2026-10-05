@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{# SC-10 資産管理（画面設計書 4.11） #}
+{% block title %}資産{% endblock %}
+{% block content %}
+{% url 'masters:new' kind='assets' as add_url %}
+{% include "masters/_back_header.html" with heading="資産" %}
+<div class="toolbar">
+  <button class="btn ghost" hx-get="{% url 'masters:new' kind='asset-groups' %}" hx-target="#modal-body">＋ 資産グループを追加</button>
+</div>
+<div id="master-list">
+  {% for group in groups %}
+  <div class="master-row group">
+    <button class="name link" hx-get="{% url 'masters:edit' kind='asset-groups' pk=group.pk %}" hx-target="#modal-body">{{ group.name }}</button>
+    <span></span>
+    {% include "masters/_moves.html" with kind="asset-groups" pk=group.pk %}
+  </div>
+  {% for asset in group.assets.all %}
+  <div class="master-row child{% if asset.is_hidden %} hidden{% endif %}">
+    <button class="name link" hx-get="{% url 'masters:edit' kind='assets' pk=asset.pk %}" hx-target="#modal-body">{{ asset.name }}</button>
+    <span class="tax">{% if asset.is_credit_card %}{{ asset.get_closing_day_label }}締め・{{ asset.get_payment_label }}{% endif %}</span>
+    {% include "masters/_moves.html" with kind="assets" pk=asset.pk %}
+  </div>
+  {% endfor %}
+  <button class="add-child link" hx-get="{% url 'masters:new' kind='assets' %}?group={{ group.pk }}" hx-target="#modal-body">＋ 資産を追加</button>
+  {% endfor %}
+</div>
+<div class="list-caption">名前を押すと編集できます。</div>
+{% include "masters/_modal_frame.html" %}
+{% endblock %}

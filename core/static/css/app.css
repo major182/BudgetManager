@@ -1256,3 +1256,71 @@ button:disabled {
   margin: 0 0 24px;
   color: var(--text-muted);
 }
+
+/* ---- 設定画面（画面設計書 4.9〜4.16） ---- */
+/* 文字のように見えるボタン（一覧の名前・「＋ 小分類を追加」など） */
+.link {
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.master-row .name {
+  min-height: 44px;
+}
+
+.master-row.group {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+.add-child.link {
+  width: 100%;
+  padding: 10px 16px 10px 36px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 8px;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.check input {
+  width: 22px;
+  height: 22px;
+}
+
+.field-help {
+  grid-column: 2;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.form-error {
+  margin: 8px 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--danger-bg);
+  color: var(--expense);
+  font-size: 13px;
+}
+
+.modal-body {
+  height: 100%;
+  overflow: auto;
+  background: var(--bg);
+}
+
+[hidden] {
+  display: none !important;
+}

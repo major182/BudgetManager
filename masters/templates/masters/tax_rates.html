@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{# SC-15 税率管理（画面設計書 4.16） #}
+{% block title %}税率{% endblock %}
+{% block content %}
+{% url 'masters:new' kind='tax-rates' as add_url %}
+{% include "masters/_back_header.html" with heading="税率" %}
+<div id="master-list">
+  {% for rate in rates %}
+  <div class="master-row{% if rate.is_hidden %} hidden{% endif %}">
+    <button class="name link" hx-get="{% url 'masters:edit' kind='tax-rates' pk=rate.pk %}" hx-target="#modal-body">{{ rate.name }}</button>
+    <span class="tax num">{{ rate.rate }}%</span>
+    {% include "masters/_moves.html" with kind="tax-rates" pk=rate.pk %}
+  </div>
+  {% endfor %}
+</div>
+<div class="list-caption">名前を押すと編集できます。</div>
+{% include "masters/_modal_frame.html" %}
+{% endblock %}

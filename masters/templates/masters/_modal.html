@@ -1,0 +1,29 @@
+{# マスタの入力の小窓の中身（画面設計書 4.9）。誤りがあればこの中身だけが差し替わる #}
+<form hx-post="{{ action }}" hx-target="#modal-body" class="modal-form">
+  <header class="header">
+    <button type="button" class="icon-btn" data-close-modal aria-label="閉じる">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <h1>{{ title }}</h1>
+    <button type="submit" class="btn primary">{% if obj %}保存{% else %}登録{% endif %}</button>
+  </header>
+  <div class="form">
+    {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+    {% for error in form.non_field_errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+    {% for field in form %}
+      {% if field.name in "closing_day payment_month_offset payment_day payment_account" %}
+        {% include "core/_field.html" with depends_on="id_is_credit_card" %}
+      {% else %}
+        {% include "core/_field.html" %}
+      {% endif %}
+    {% endfor %}
+    {% if obj %}
+    <div class="btn-row">
+      <button type="button" class="btn danger"
+        hx-post="{{ delete_url }}" hx-target="#modal-body"
+        hx-confirm="「{{ obj.name }}」を削除しますか？この操作は取り消せません。"
+        data-confirm-ok="削除する">削除</button>
+    </div>
+    {% endif %}
+  </div>
+</form>

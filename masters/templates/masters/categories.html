@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{# SC-09 分類管理（画面設計書 4.10）。右の数字は既定の税率（空なら設定の既定値） #}
+{% block title %}分類{% endblock %}
+{% block content %}
+{% url 'masters:new' kind='categories' as new_url %}
+{% with add_url=new_url|add:"?kind="|add:kind %}
+{% include "masters/_back_header.html" with heading="分類" %}
+{% endwith %}
+<nav class="tabs" role="tablist">
+  {% for value, label in kinds %}
+  <a role="tab" href="?kind={{ value }}" aria-selected="{% if value == kind %}true{% else %}false{% endif %}">{{ label }}</a>
+  {% endfor %}
+</nav>
+<div id="master-list">
+  {% for top in tops %}
+  <div class="master-row">
+    <button class="name link" hx-get="{% url 'masters:edit' kind='categories' pk=top.pk %}" hx-target="#modal-body">{{ top.name }}</button>
+    <span class="tax num">{% firstof top.default_tax_rate.rate default_rate.rate %}%</span>
+    {% include "masters/_moves.html" with kind="categories" pk=top.pk %}
+  </div>
+  {% for child in top.children.all %}
+  <div class="master-row child{% if child.is_hidden %} hidden{% endif %}">
+    <button class="name link" hx-get="{% url 'masters:edit' kind='categories' pk=child.pk %}" hx-target="#modal-body">{{ child.name }}</button>
+    <span class="tax num">{% firstof child.default_tax_rate.rate default_rate.rate %}%</span>
+    {% include "masters/_moves.html" with kind="categories" pk=child.pk %}
+  </div>
+  {% endfor %}
+  <button class="add-child link" hx-get="{% url 'masters:new' kind='categories' %}?kind={{ kind }}&parent={{ top.pk }}" hx-target="#modal-body">＋ 小分類を追加</button>
+  {% endfor %}
+  {% if hidden_tops %}
+  <div class="list-caption">非表示</div>
+  {% for top in hidden_tops %}
+  <div class="master-row hidden">
+    <button class="name link" hx-get="{% url 'masters:edit' kind='categories' pk=top.pk %}" hx-target="#modal-body">{{ top.name }}</button>
+    <span class="tax num">{% firstof top.default_tax_rate.rate default_rate.rate %}%</span>
+    {% include "masters/_moves.html" with kind="categories" pk=top.pk %}
+  </div>
+  {% endfor %}
+  {% endif %}
+</div>
+<div class="list-caption">分類名を押すと編集できます。右の数字は既定の税率です。</div>
+{% include "masters/_modal_frame.html" %}
+{% endblock %}

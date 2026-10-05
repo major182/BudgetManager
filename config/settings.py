@@ -7,7 +7,11 @@
 
 from pathlib import Path
 
+import django_stubs_ext
 import environ
+
+# ModelForm[TaxRate] のような型の書き方を、実行時にも使えるようにする（型チェックの mypy のため）
+django_stubs_ext.monkeypatch()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

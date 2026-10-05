@@ -67,6 +67,37 @@
     dialog.showModal();
   });
 
+  // ---------------------------------------------------------------- 入力の小窓（画面設計書 1.7・4.9）
+  // htmx が小窓の中身（#modal-body）を入れたら小窓を開く。誤りで中身が差し替わったときは開いたまま
+  document.body.addEventListener("htmx:afterSwap", (event) => {
+    if (event.detail.target.id !== "modal-body") return;
+    const dialog = document.getElementById("modal");
+    if (dialog && !dialog.open) dialog.showModal();
+    applyDependsOn(event.detail.target);
+  });
+  // 閉じるボタン
+  document.body.addEventListener("click", (event) => {
+    if (!event.target.closest("[data-close-modal]")) return;
+    const dialog = event.target.closest("dialog");
+    if (dialog) dialog.close();
+  });
+
+  // ---------------------------------------------------------------- 項目の出し分け
+  // data-depends-on="チェックボックスの id" を付けた項目は、チェックが入っているときだけ表示する
+  // （例：クレジットカードのときだけ締め日などを出す。画面設計書 4.11）
+  function applyDependsOn(root) {
+    root.querySelectorAll("[data-depends-on]").forEach((el) => {
+      const box = document.getElementById(el.dataset.dependsOn);
+      if (!box) return;
+      const update = () => {
+        el.hidden = !box.checked;
+      };
+      box.addEventListener("change", update);
+      update();
+    });
+  }
+  document.addEventListener("DOMContentLoaded", () => applyDependsOn(document));
+
   // ---------------------------------------------------------------- 通信のエラー（画面設計書 6.6）
   // サーバーのエラー（MSG-S01）
   document.body.addEventListener("htmx:responseError", (event) => {

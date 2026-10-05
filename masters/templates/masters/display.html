@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{# SC-14 表示設定（画面設計書 4.15） #}
+{% block title %}表示設定{% endblock %}
+{% block content %}
+{% include "masters/_back_header.html" with heading="表示設定" %}
+<form method="post" class="form">
+  {% csrf_token %}
+  {% for error in form.non_field_errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+  {% for field in form %}{% include "core/_field.html" %}{% endfor %}
+  <p class="list-caption">月の開始日を変えると、家計簿・統計・予算の期間が変わります。登録済みの明細は変わりません。</p>
+  <div class="btn-row"><button type="submit" class="btn primary block">保存</button></div>
+</form>
+{% endblock %}
