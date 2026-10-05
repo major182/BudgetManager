@@ -1406,3 +1406,35 @@ a.cal-cell {
 .search-form {
   padding-bottom: 0;
 }
+
+/* ---- 資産詳細（画面設計書 4.7） ---- */
+.period-bar {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--surface);
+}
+
+.summary4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 8px;
+  padding: 12px 8px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.summary4 .cap {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.summary4 .val {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+a.asset-row {
+  color: inherit;
+}

@@ -1,6 +1,30 @@
 {% extends "base.html" %}
-{# SC-06 資産（画面設計書 4.6）。中身は Issue 6 で実装する #}
+{# SC-06 資産（画面設計書 4.6） #}
+{% load budget %}
 {% block title %}資産{% endblock %}
 {% block content %}
 <header class="header"><h1 class="left-title">資産</h1></header>
+<div class="summary3">
+  <div><div class="cap">資産</div><div class="val num income">{% yen summary.assets %}</div></div>
+  <div><div class="cap">負債</div><div class="val num expense">{% yen summary.liabilities %}</div></div>
+  <div><div class="cap">純資産</div><div class="val num {{ summary.net|signed_class }}">{% yen summary.net %}</div></div>
+</div>
+{% for item in groups %}
+<div class="group-head"><span>{{ item.group.name }}</span><span class="num {{ item.subtotal|signed_class }}">{% yen item.subtotal %}</span></div>
+{% for row in item.rows %}
+<a class="asset-row" href="{% url 'reports:asset_current' pk=row.asset.pk %}">
+  <span>{{ row.asset.name }}{% if row.asset.is_hidden %}<span class="badge">非表示</span>{% endif %}</span>
+  <span class="num {{ row.balance|signed_class }}">{% yen row.balance %}</span>
+  {% if row.bill %}<span class="note">次回 {{ row.bill.payment_date|date:"n/j" }}（{{ row.bill.payment_date|date:"D" }}） {% yen row.bill.amount %}{% if row.bill.estimate %}（目安）{% endif %}</span>{% endif %}
+</a>
+{% endfor %}
+{% empty %}
+<div class="empty">資産が登録されていません。</div>
+{% endfor %}
+{% if has_hidden %}
+<div class="toolbar">
+  {% if show_hidden %}<a class="btn ghost" href="?">非表示の資産を隠す</a>{% else %}<a class="btn ghost" href="?hidden=1">非表示の資産も表示</a>{% endif %}
+</div>
+{% endif %}
+<p class="list-caption">非表示の資産も、資産・負債・純資産と小計には含めています。</p>
 {% endblock %}

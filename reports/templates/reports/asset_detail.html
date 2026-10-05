@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{# SC-07 資産詳細（画面設計書 4.7） #}
+{% load budget %}
+{% block title %}{{ asset.name }}{% endblock %}
+{% block content %}
+<header class="header">
+  <a class="icon-btn" href="{% url 'reports:assets' %}" aria-label="戻る">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+  </a>
+  <h1>{{ asset.name }}</h1><span class="header-spacer"></span>
+</header>
+<div class="period-bar">
+  <a class="icon-btn" href="{{ prev_url }}" aria-label="前の月">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+  </a>
+  <div class="period"><span class="label">{{ label }}</span>{% if not period.is_calendar_month %}<span class="range">{{ period.start|date:"n/j" }}〜{{ period.end|date:"n/j" }}</span>{% endif %}</div>
+  <a class="icon-btn" href="{{ next_url }}" aria-label="次の月">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+  </a>
+</div>
+
+{% if asset.is_credit_card %}
+<section class="section">
+  <h2>{{ asset.get_closing_day_label }}締め・{{ asset.get_payment_label }}（{{ asset.payment_account }}から）</h2>
+  {% for bill in bills %}
+  <div class="bill">
+    <span>{{ bill.payment_date|date:"n/j" }}（{{ bill.payment_date|date:"D" }}）引き落とし <span class="muted">{{ bill.closing_date|date:"n/j" }} 締め</span></span>
+    <span class="num">{% yen bill.amount %}{% if bill.estimate %}（目安）{% endif %}</span>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<div class="summary4">
+  <div><div class="cap">月初</div><div class="val num {{ opening|signed_class }}">{% yen opening %}</div></div>
+  <div><div class="cap">入金</div><div class="val num income">{% yen money_in %}</div></div>
+  <div><div class="cap">出金</div><div class="val num expense">{% yen money_out %}</div></div>
+  <div><div class="cap">月末</div><div class="val num {{ closing|signed_class }}">{% yen closing %}</div></div>
+</div>
+
+{% if rows %}
+<section class="day">
+  {% for row in rows %}
+  {% with tx=row.tx %}
+  <button type="button" class="row" hx-get="{% url 'ledger:edit' pk=tx.pk %}?modal=1" hx-target="#modal-body" hx-select="#entry-form" hx-swap="innerHTML">
+    <span class="cat"><span class="muted">{{ tx.date|date:"n/j" }}（{{ tx.date|date:"D" }}）</span>
+      {% if tx.kind == "transfer" %}振替{% else %}{{ tx.lines.all.0.category }}{% endif %}</span>
+    <span class="sub">{% if tx.description %}{{ tx.description }}　{% endif %}{% if tx.kind == "transfer" %}{{ tx.asset }} → {{ tx.transfer_to_asset }}{% endif %}</span>
+    {# この資産から見た増減。振替は灰色、入金は青、出金は赤（画面設計書 1.2） #}
+    <span class="amt num {% if tx.kind == 'transfer' %}transfer{% elif row.delta >= 0 %}income{% else %}expense{% endif %}">{% yen row.delta %}</span>
+    <span class="sub num {{ row.after|signed_class }}">残高 {% yen row.after %}</span>
+  </button>
+  {% endwith %}
+  {% endfor %}
+</section>
+{% else %}
+<div class="empty">この期間の明細はありません。</div>
+{% endif %}
+{% include "core/_modal_frame.html" %}
+{% endblock %}
