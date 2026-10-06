@@ -56,3 +56,28 @@ jobs:
 
       - name: lint・整形・型・テスト
         run: uv run python scripts/check.py
+
+      # 本番の設定に漏れがないかを確かめる（技術選定書 7.2 S-07）。警告が1つでもあれば失敗させる
+      - name: 本番の設定の確認（check --deploy）
+        run: |
+          SECRET_KEY="$(uv run python -c 'import secrets; print(secrets.token_urlsafe(50))')" \
+          PRODUCTION=True ALLOWED_HOSTS=budget.example.ts.net \
+          uv run python manage.py check --deploy --fail-level WARNING
+
+  # 本番と同じ ARM のランナーで、イメージを作れることを確かめる（06 デプロイ設計書 4.2）
+  image:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: イメージを作る
+        run: docker build --tag budget:ci .
+
+      - name: イメージの中の設定を確かめる
+        run: |
+          docker run --rm \
+            -e SECRET_KEY="$(openssl rand -base64 48)" \
+            -e ALLOWED_HOSTS=budget.example.ts.net \
+            -e DATABASE_URL=mysql://x:x@localhost/x \
+            budget:ci python manage.py check --deploy --fail-level WARNING

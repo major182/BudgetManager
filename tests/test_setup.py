@@ -28,3 +28,10 @@ def test_管理画面は公開しない(client: Client) -> None:
     # 技術選定書 7.2 S-06：ログインがないため /admin/ を登録しない
     response = client.get("/admin/")
     assert response.status_code == 404
+
+
+def test_静的ファイルはJavaScriptの中の参照を書き換えない() -> None:
+    # 06 デプロイ設計書 4.2：Chart.js に残る .map への参照で collectstatic が失敗しないようにする
+    from core.storage import StaticFilesStorage
+
+    assert [pattern for pattern, _ in StaticFilesStorage.patterns] == ["*.css"]

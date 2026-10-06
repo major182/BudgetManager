@@ -141,7 +141,7 @@ gh pr checks <番号>                                        # ④ 実行 ID（r
 - **S-04** CSV 出力では、文字の項目の先頭が `=` `+` `-` `@` なら先頭に `'` を付ける（数値の項目には付けない）
 - **S-05** `DEBUG`・`SECRET_KEY`・DB の接続情報は環境変数で渡す。リポジトリに書かない
 - **S-06** Django の管理画面（`/admin/`）を使わない（URL を登録しない）
-- **S-07** CI で `manage.py check --deploy` を実行する
+- **S-07** CI で `manage.py check --deploy` を実行する（`PRODUCTION=True`。`.github/workflows/ci.yml`）
 
 ---
 

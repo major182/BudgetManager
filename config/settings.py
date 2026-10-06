@@ -19,6 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, []),
+    PRODUCTION=(bool, False),
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
@@ -29,6 +30,9 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
 
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+
+# 本番（EC2 の Docker、Tailscale 経由の HTTPS）で動かすときだけ True にする（06 デプロイ設計書 1.3）
+PRODUCTION = env("PRODUCTION")
 
 
 # アプリケーションの定義
@@ -50,6 +54,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # CSS・JavaScript を Django から配信する（技術選定書 5章）
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -98,13 +104,39 @@ USE_TZ = True
 
 # CSS・JavaScript・画像
 STATIC_URL = "static/"
+# collectstatic で集める先。本番のイメージを作るときに集める
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 # ログ（要件定義書 NF-OP-01・02）
 # アプリのエラーと、定期処理（BT-01・02）の実行結果を出力する。
-# 出力先のファイルと保存期間（30日）は、デプロイ設計で決める
+# 標準出力に出し、本番では Docker が CloudWatch Logs に送って30日で消す（06 デプロイ設計書 4.2）
+# 本番の設定（06 デプロイ設計書 1.3）。CI でも PRODUCTION=True で check --deploy を通す（S-07）
+if PRODUCTION:
+    # ファイル名に中身のハッシュを付け、圧縮して配信する
+    # （ブラウザに長く保存させても、更新が反映される）
+    STORAGES["staticfiles"] = {"BACKEND": "core.storage.StaticFilesStorage"}
+    # HTTPS は tailscale serve が受け、X-Forwarded-Proto: https を付けて Gunicorn に渡す。
+    # Gunicorn は EC2 の中の 127.0.0.1 だけで待つため、
+    # この見出しを偽って送れるのは tailscale serve だけ
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # HSTS の preload 一覧への登録は、ドメインの持ち主（Tailscale）が ts.net 全体で行っている。
+    # 自分では登録できないため、preload を勧める警告（security.W021）は出さない
+    SILENCED_SYSTEM_CHECKS = ["security.W021"]
+
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

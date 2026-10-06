@@ -8,7 +8,9 @@ dependencies = [
     "django==5.2.17",
     "django-environ==0.14.0",
     "django-stubs-ext==5.2.9",
+    "gunicorn==26.2.0",
     "mysqlclient==2.3.0",
+    "whitenoise==6.12.0",
 ]
 
 # Django アプリは配布用パッケージにしないため、uv にビルドさせない
@@ -57,8 +59,13 @@ django_settings_module = "config.settings"
 
 # django-environ は型の情報を持っていないため、型チェックの対象から外す
 [[tool.mypy.overrides]]
-module = ["environ", "environ.*"]
+module = ["environ", "environ.*", "whitenoise", "whitenoise.*"]
 ignore_missing_imports = true
+
+# WhiteNoise の型の情報がないため、その部品を受け継ぐクラスだけ、型の検査を緩める
+[[tool.mypy.overrides]]
+module = ["core.storage"]
+disallow_subclassing_any = false
 
 # ---- テスト（pytest 9.1.1 + pytest-django 4.14.0）----
 [tool.pytest.ini_options]
