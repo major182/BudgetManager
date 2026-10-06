@@ -147,6 +147,21 @@ gh pr checks <番号>                                        # ④ 実行 ID（r
 
 ## 4. 環境まわりの注意（Windows）
 
+### 4.1 開発環境の作り方
+
+前提：uv 0.12.21 と Docker Desktop が入っていること。
+
+```powershell
+uv sync                                        # Python 3.14.7 と依存（uv.lock で固定）を入れる
+Copy-Item .env.example .env                    # SECRET_KEY を書き換える（手順は .env.example の中）
+docker compose up -d                           # 開発用の MySQL 8.4.11 を起動する
+uv run python manage.py migrate                # テーブルと初期データを作る
+uv run python manage.py import_holidays        # 祝日データを取り込む（営業日の計算に使う）
+uv run python manage.py runserver              # http://127.0.0.1:8000/
+```
+
+### 4.2 注意
+
 - ツールが常駐プロセス（デーモン・開発サーバー）を持つ場合、**ブランチ切り替え前に止める**
   （前回は Gradle デーモンがファイルを掴んだまま切り替えが失敗し、作業ツリーが壊れた）
 - テスト用・開発用の DB はコンテナで起動する前提。Docker Desktop を起動してから `docker compose up -d`
