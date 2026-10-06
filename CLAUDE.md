@@ -37,7 +37,7 @@
 | バックエンド | Python 3.14.7、Django 5.2.17 (LTS)、mysqlclient 2.3.0、django-environ 0.14.0、Gunicorn 26.2.0、WhiteNoise 6.12.0、管理コマンド + cron、uv 0.12.21 |
 | データベース | MySQL 8.4.11 (LTS)（本番は RDS、開発・テストは Docker） |
 | 開発ツール | Ruff 0.16.9、mypy 1.19.1 + django-stubs 5.2.9、pytest 9.1.1 + pytest-django 4.14.0、GitHub Actions |
-| インフラ | Amazon Linux 2023、Tailscale 1.102.5（サーバーはインターネットに公開しない）、Terraform 1.16.4、Docker |
+| インフラ | Amazon Linux 2023、Tailscale 1.102.5（サーバーはインターネットに公開しない）、Terraform 1.16.5、Docker |
 
 - フロントエンドとバックエンドは1つの Django プロジェクトに同居する（別アプリに分けない）
 - ライブラリを追加するときは、ビルドが必要にならないか（npm・Node.js を持ち込まないか）を確認する
@@ -113,6 +113,7 @@ gh pr checks <番号>                                        # ④ 実行 ID（r
 | 03 | [DB 設計書](docs/03_db-design.md) | テーブル定義・制約・計算の仕方・初期データの正。モデルはこれに合わせて書く |
 | 04 | [画面設計書](docs/04_screen-design.md) | 画面の項目・動き・URL・メッセージの文言の正。プロトタイプ・実装はこれに合わせる |
 | 05 | [テスト仕様書](docs/05_test-spec.md) | テストの観点と期待値（T-xx）。実装の Issue ごとに同じ PR で書き足す |
+| 07 | [デプロイ設計書](docs/07_deployment.md) | AWS・Tailscale の構成、費用、秘密情報の置き場、構築・デプロイ・運用（起動と停止・バックアップ）・後片付けの手順の正 |
 
 ---
 
