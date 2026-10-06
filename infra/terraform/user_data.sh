@@ -28,11 +28,14 @@ dnf config-manager --add-repo https://pkgs.tailscale.com/stable/amazon-linux/202
 dnf install -y tailscale-1.102.5
 systemctl enable --now tailscaled
 
-# 認証キーは利用者がパラメータストアに登録したもの。使い捨てのため、参加したあとは不要になる
+# 認証キーは利用者がパラメータストアに登録したもの。使い捨てのため、参加したあとは不要になる。
+# キーを扱う間はコマンドの記録（set -x）を止める。止めないと、キーがログと EC2 のコンソールの出力に残る（NF-SE-04）
+set +x
 AUTHKEY=$(aws ssm get-parameter --region "$REGION" --name /${project}/TAILSCALE_AUTHKEY \
   --with-decryption --query Parameter.Value --output text)
 tailscale up --authkey="$AUTHKEY" --hostname=${project}
 unset AUTHKEY
+set -x
 
 # tailnet の中だけに HTTPS で公開し、Gunicorn（127.0.0.1:8000）へ渡す。設定は再起動しても残る
 tailscale serve --bg --https=443 http://127.0.0.1:8000
@@ -79,7 +82,13 @@ docker run -d --name app --restart unless-stopped \
 for _ in $(seq 1 30); do
   if curl -fsS -o /dev/null -H "Host: $HOST" -H "X-Forwarded-Proto: https" http://127.0.0.1:8000/; then
     echo "デプロイしました：$IMAGE"
-    # 入れ替えで使わなくなった古いイメージを消す（ディスク 10GB を圧迫しないため）
+    # 動いている版以外のアプリのイメージを消す（ディスク 10GB を圧迫しないため）。
+    # 古いイメージにはコミット ID のタグが残るため、タグのないものだけを消す prune では消えない。
+    # 前の版に戻すときは、ECR から取り出し直す（ECR には5つ残している）
+    CURRENT=$(docker inspect --format '{{.Image}}' app)
+    # 消すものがないと grep が失敗の終わり方をするため、|| true で続ける（set -o pipefail のため）
+    docker images --no-trunc --format '{{.ID}}' ${ecr_repository} | sort -u \
+      | { grep -vF "$CURRENT" || true; } | xargs -r docker rmi -f
     docker image prune -f
     exit 0
   fi

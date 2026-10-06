@@ -5,6 +5,10 @@
 - 開発の進め方・規約：[CLAUDE.md](CLAUDE.md)
 - 要件定義書：[docs/01_requirements.md](docs/01_requirements.md)
 - 技術選定書：[docs/02_tech-stack.md](docs/02_tech-stack.md)
+- DB 設計書：[docs/03_db-design.md](docs/03_db-design.md)
+- 画面設計書：[docs/04_screen-design.md](docs/04_screen-design.md)
+- テスト仕様書：[docs/05_test-spec.md](docs/05_test-spec.md)
+- デプロイ設計書（AWS の構築・運用の手順）：[docs/06_deployment.md](docs/06_deployment.md)
 
 ## 開発の始め方（Windows）
 
@@ -23,7 +27,10 @@ docker compose up -d
 # 4. DB にテーブルを作る
 uv run python manage.py migrate
 
-# 5. 開発用サーバーを起動する → http://127.0.0.1:8000/
+# 5. 祝日データを取り込む（営業日の計算と、カレンダーの祝日の表示に使う）
+uv run python manage.py import_holidays
+
+# 6. 開発用サーバーを起動する → http://127.0.0.1:8000/
 uv run python manage.py runserver
 ```
 
