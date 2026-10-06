@@ -5,9 +5,9 @@ PC とスマホの Chrome で使えます。
 
 ## デモ動画
 
-[![デモ動画（約3分）：画像を押すと動画のページが開きます](docs/media/demo-thumbnail.png)](docs/media/demo.mp4)
+https://github.com/user-attachments/assets/8ebd9140-9abe-478e-92bf-598750d2bd64
 
-画像を押すと、動画（約3分）のページが開きます。主な操作を、次の順に紹介しています。
+約3分の動画で、主な操作を次の順に紹介しています。再生できない場合は、[動画のファイル](docs/media/demo.mp4)を開いてください。
 
 | 時間 | 内容 |
 |---|---|
