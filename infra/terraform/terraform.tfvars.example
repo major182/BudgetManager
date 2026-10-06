@@ -1,0 +1,8 @@
+# terraform.tfvars の見本。コピーして値を書き換える（terraform.tfvars はリポジトリに入れない）
+#   Copy-Item terraform.tfvars.example terraform.tfvars
+
+# Tailscale の管理画面の DNS に出る tailnet の名前（06 デプロイ設計書 3.2）
+tailnet_domain = "tail1234.ts.net"
+
+# 課題が終わって全部削除するときだけ false にして apply する（06 デプロイ設計書 8章）
+db_deletion_protection = true

@@ -3,7 +3,7 @@
 | 項目 | 内容 |
 |---|---|
 | 文書番号 | 06 |
-| 版数 | 0.2 |
+| 版数 | 0.3 |
 | 作成日 | 2026-10-06 |
 | 作成者 | major182 |
 | 前提となる文書 | [01 要件定義書](01_requirements.md)、[02 技術選定書](02_tech-stack.md) |
@@ -50,7 +50,7 @@ AWS 上でアプリを動かし、本人の端末から Tailscale を通して�
 | ログ | Docker の awslogs で **CloudWatch Logs** に送り、**30日で自動削除** | NF-OP-01・02 |
 | 定期処理 | EC2 の cron（日本時間） | 技術選定書 5章（4.3） |
 | 構成の管理 | Terraform。状態ファイル（tfstate）は手元の PC に置き、リポジトリには入れない | NF-OP-03。1人で使うため、共有の置き場（S3）は作らない |
-| 費用の見張り | AWS Budgets（月 $5）とコスト異常検出 | 消し忘れ・使いすぎに気づく（2.4） |
+| 費用の見張り | AWS Budgets（月 $5）とコスト異常検出。**アカウントに設定済みのものを使い、Terraform では作らない** | 消し忘れ・使いすぎに気づく（2.4） |
 
 ### 1.2 構成図
 
@@ -137,10 +137,10 @@ AWS 上でアプリを動かし、本人の端末から Tailscale を通して�
 
 | 設定 | 内容 |
 |---|---|
-| 予算アラート（AWS Budgets） | 月 **$5**。実績の 80% と、予測の 100% でメールで知らせる。クレジットを費用に含める（既定）ため、クレジットが尽きて実際の請求が始まったときだけ鳴る |
+| 予算アラート（AWS Budgets） | 予算「free」：月 **$5**、実績が超えたらメールで知らせる。クレジットを費用に含める（既定）ため、クレジットが尽きて実際の請求が始まったときだけ鳴る |
 | コスト異常検出 | 有効にする。普段と違う使われ方を知らせる |
 
-通知先のメールアドレスは `terraform.tfvars`（リポジトリに入れない）に書く。
+どちらもアカウントを作ったときに設定済みだったため、そのまま使う（2026-10-06 に確認）。Terraform で作ると重複し、コスト異常検出はアカウントに1つしか作れないため。
 
 ---
 
@@ -193,7 +193,7 @@ AWS 上でアプリを動かし、本人の端末から Tailscale を通して�
 
 1. タイムゾーンを `Asia/Tokyo` にする（cron を日本時間で動かすため）
 2. スワップ（1GB）を作る（メモリ 1GB での起動時の不足を防ぐ）
-3. Docker・cronie を入れて有効にする（Amazon Linux 2023 のパッケージ）
+3. Docker・cronie を入れて有効にする（Amazon Linux 2023 のパッケージ。2026-10-06 の構築では Docker 25.0.16）
 4. Tailscale を入れ、パラメータストアの認証キーで参加する（`tailscale up --authkey=… --hostname=budget`）
 5. `tailscale serve --bg --https=443 http://127.0.0.1:8000` で HTTPS の入口を作る（設定は残り、再起動後も続く）
 6. `/opt/budget/` に、次のスクリプトと systemd・cron の設定を置く
@@ -240,7 +240,7 @@ AWS 上でアプリを動かし、本人の端末から Tailscale を通して�
 ```
 infra/terraform/
 ├── versions.tf               Terraform と AWS プロバイダーの版
-├── variables.tf              変数（tailnet_domain、alert_email など）
+├── variables.tf              変数（tailnet_domain、db_deletion_protection など）
 ├── terraform.tfvars.example  変数の見本（本物の terraform.tfvars はリポジトリに入れない）
 ├── network.tf                VPC・サブネット・ルート・セキュリティグループ
 ├── ec2.tf                    EC2・IAM ロール（SSM・ECR・S3・CloudWatch Logs・パラメータストアの読み取り）
@@ -249,7 +249,6 @@ infra/terraform/
 ├── backup.tf                 S3（公開を禁止・暗号化・7日で削除）
 ├── ssm.tf                    パラメータストアの値（TAILSCALE_AUTHKEY 以外）
 ├── logs.tf                   CloudWatch Logs（30日）
-├── budget.tf                 AWS Budgets・コスト異常検出
 ├── github_oidc.tf            GitHub Actions 用の OIDC と IAM ロール
 ├── user_data.sh              EC2 の初期設定（4.1）
 └── outputs.tf                インスタンス ID・URL など
@@ -260,15 +259,25 @@ infra/terraform/
 | 変数 | 内容 | 例 |
 |---|---|---|
 | `tailnet_domain` | Tailscale の tailnet の名前 | `tail1234.ts.net` |
-| `alert_email` | 予算アラートの通知先 | （本人のメールアドレス） |
 | `db_deletion_protection` | RDS の削除の保護。課題の期間中は `true` | `true` |
 
 ### 5.3 構築する
 
+EC2 は起動時に ECR のイメージを取り込むため、**ECR を先に作り、イメージを置いてから残りを作る**。
+
 ```powershell
 terraform -chdir=infra/terraform init
-terraform -chdir=infra/terraform plan     # 作られるものを確かめる
-terraform -chdir=infra/terraform apply    # 構築（RDS の作成に 約 10 分）
+# 1. ECR だけを作る
+terraform -chdir=infra/terraform apply -target=aws_ecr_repository.app -target=aws_ecr_lifecycle_policy.app
+# 2. 手元で ARM のイメージを作って置く（自動デプロイ（6章）ができたあとは、main へのマージでもよい）
+$repo = terraform -chdir=infra/terraform output -raw ecr_repository_url
+aws ecr get-login-password | docker login --username AWS --password-stdin $repo.Split("/")[0]
+docker buildx build --platform linux/arm64 --provenance=false --sbom=false -t "$($repo):latest" --push .
+# 3. 残りを作る（RDS の作成に 約 9 分）
+terraform -chdir=infra/terraform plan
+terraform -chdir=infra/terraform apply
+# 4. 新しい DB に祝日データを入れる（EC2 の起動から 約 3 分後）
+aws ssm send-command --instance-ids (terraform -chdir=infra/terraform output -raw instance_id) --document-name AWS-RunShellScript --parameters 'commands=["/opt/budget/run-task.sh import_holidays"]'
 ```
 
 ### 5.4 構築後に確かめること
@@ -280,6 +289,8 @@ terraform -chdir=infra/terraform apply    # 構築（RDS の作成に 約 10 分
 | アプリが開く | PC とスマホで Tailscale を起動し、`https://budget.<tailnet>.ts.net` を開く |
 | Tailscale を切ると開けない | Tailscale を切って同じ URL を開き、つながらないことを確かめる（受け入れ基準 4） |
 | ログが届く | CloudWatch Logs の `/budget/app` に Gunicorn の起動のログがある |
+| 公開 IP に直接つないでも応答しない | EC2 の公開 IP に `curl http://<IP>/` などでつなぎ、応答がないことを確かめる |
+| バックアップが置ける | サーバーの中で `sudo /opt/budget/backup.sh` を動かし、S3 にファイルができる |
 
 ---
 
@@ -444,6 +455,7 @@ aws s3 ls
 | 自動デプロイが「デプロイ先が1台に定まりません」で失敗 | EC2 が止まっている | EC2 を起動して、ワークフローを再実行する |
 | 自動デプロイが OIDC の認証で失敗 | 信頼条件の識別子が合っていない | 6.3 |
 | `FreeTierRestrictionError` | 無料プランの制限（2.1） | 値を制限の中にする（バックアップの保存期間は 1日まで） |
+| アプリが再起動を繰り返す・`app.env` に `DATABASE_URL` がない | EC2 が、DB の接続先をパラメータストアに入れる前に起動した | `sudo systemctl restart budget`（設定を読み直して起動する）。Terraform では EC2 をパラメータの後に作るようにしてある |
 | `plan` に `-/+`（作り直し）が出た | `user_data.sh` の変更など。EC2 を作り直すとサーバーの状態が消える | apply の前に内容を確かめる。EC2 なら認証キーを用意してから（3.2） |
 | SSM で接続できない | エージェントの登録待ち | 3 分待つ。`aws ssm describe-instance-information` で確かめる |
 | 手元の PC から DB につなげない | 設計どおり（RDS は外から届かない） | EC2 の中から操作する |
@@ -484,3 +496,4 @@ aws s3 ls
 |---|---|---|
 | 0.1 | 2026-10-06 | 作成（デプロイの設計。構築・自動デプロイの前） |
 | 0.2 | 2026-10-06 | 本番の設定とイメージ（3.1・4.2）を、作ったものに合わせて追記 |
+| 0.3 | 2026-10-06 | 構築の結果に合わせて更新：予算のアラートは設定済みのものを使う（1.1・2.4）、構築の手順（5.3）、確かめること（5.4）、Docker の版数（4.1）、つまずきポイント |
