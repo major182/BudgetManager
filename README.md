@@ -10,7 +10,9 @@ PC とスマホの Chrome で使えます。
 ### 開き方
 
 1. PC・スマホで **Tailscale** のアプリを起動し、接続（オン）にする
-2. Chrome で **https://budget.tail9a3354.ts.net/** を開く
+2. Chrome で **https://budget.＜tailnet の名前＞.ts.net/** を開く
+
+   ＜tailnet の名前＞は、Tailscale の管理画面の「DNS」に出る `tailxxxx.ts.net` の `tailxxxx` の部分です。一度開いたら、ブックマークしておくと便利です
 
 - 家計簿は、Tailscale に参加している自分の端末からしか開けません。Tailscale がオフだと、ページは表示されません
 - ログインはありません。開くと、今月の家計簿が表示されます
@@ -138,7 +140,7 @@ PC とスマホの Chrome で使えます。
 | こんなとき | 確かめること |
 |---|---|
 | ページが開かない | その端末で Tailscale がオンになっているか。サーバーが止まっていないか（止めている間は開けません） |
-| 「Bad Request (400)」と出る | アドレスが https://budget.tail9a3354.ts.net/ になっているか |
+| 「Bad Request (400)」と出る | アドレスが「はじめに」の URL（`https://budget.` で始まり `.ts.net/` で終わる）になっているか |
 | 端末を失くした | Tailscale の管理画面で、その端末を外す（外すと、その端末からは開けなくなります） |
 
 ---
