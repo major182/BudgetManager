@@ -1,0 +1,99 @@
+# 自動デプロイ（06 デプロイ設計書 6章、要件定義書 NF-OP-04）
+# main への push で CI が通ったら、イメージを作って ECR に置き、EC2 のコンテナを入れ替える
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write # OIDC で AWS に入るため
+
+# デプロイを同時に2つ動かさない。後から来たものは、前のものが終わるまで待つ
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-northeast-1
+  PROJECT: budget
+
+jobs:
+  deploy:
+    # CI が成功した、main への push だけ（PR のコードは AWS の権限付きで動かさない）
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-24.04-arm # 本番の EC2 と同じ ARM
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 2
+
+      # 設計書・Terraform・プロトタイプだけの変更では、デプロイしない
+      - name: アプリに関わる変更があるかを調べる
+        id: changes
+        run: |
+          changed=$(git diff --name-only HEAD^1 HEAD | grep -vE '^(docs/|infra/|prototype/|.*\.md$)' || true)
+          echo "$changed"
+          if [ -n "$changed" ]; then echo "app=true" >> "$GITHUB_OUTPUT"; else echo "app=false" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: aws-actions/configure-aws-credentials@v6.3.0
+        if: steps.changes.outputs.app == 'true'
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2.1.7
+        if: steps.changes.outputs.app == 'true'
+        id: ecr
+
+      # latest と コミット ID の2つのタグを付ける。コミット ID は前の版に戻すときに使う（06 デプロイ設計書 6.2）。
+      # provenance・sbom を付けないのは、付けると ECR の脆弱性の検査がイメージを読めないため
+      - name: イメージを作って ECR に置く
+        if: steps.changes.outputs.app == 'true'
+        env:
+          REPOSITORY: ${{ steps.ecr.outputs.registry }}/budget-app
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          docker buildx build --provenance=false --sbom=false \
+            --tag "$REPOSITORY:latest" --tag "$REPOSITORY:$SHA" --push .
+
+      # EC2 を作り直すと ID が変わるため、タグで探す。止まっていると見つからず、失敗する
+      - name: デプロイ先の EC2 を探す
+        if: steps.changes.outputs.app == 'true'
+        id: target
+        run: |
+          ids=$(aws ec2 describe-instances \
+            --filters "Name=tag:Project,Values=$PROJECT" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" --output text)
+          count=$(echo "$ids" | wc -w)
+          if [ "$count" -ne 1 ]; then
+            echo "::error::デプロイ先が1台に定まりません（起動中の EC2：$count 台）。EC2 を起動してから、このワークフローを再実行してください"
+            exit 1
+          fi
+          echo "id=$ids" >> "$GITHUB_OUTPUT"
+
+      - name: EC2 のコンテナを入れ替える
+        if: steps.changes.outputs.app == 'true'
+        env:
+          INSTANCE_ID: ${{ steps.target.outputs.id }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          command_id=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "deploy $SHA" \
+            --parameters "commands=[\"/opt/$PROJECT/deploy.sh $SHA\"]" \
+            --query Command.CommandId --output text)
+          # 終わるまで待つ。deploy.sh の応答の確認（最大 60 秒）が失敗すると、ここも失敗する
+          aws ssm wait command-executed --command-id "$command_id" --instance-id "$INSTANCE_ID" || true
+          aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+            --query "[Status, StandardOutputContent, StandardErrorContent]" --output text
+          status=$(aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+            --query Status --output text)
+          test "$status" = "Success"

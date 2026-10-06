@@ -3,7 +3,7 @@
 | 項目 | 内容 |
 |---|---|
 | 文書番号 | 06 |
-| 版数 | 0.3 |
+| 版数 | 0.4 |
 | 作成日 | 2026-10-06 |
 | 作成者 | major182 |
 | 前提となる文書 | [01 要件定義書](01_requirements.md)、[02 技術選定書](02_tech-stack.md) |
@@ -299,7 +299,8 @@ aws ssm send-command --instance-ids (terraform -chdir=infra/terraform output -ra
 ### 6.1 自動デプロイの流れ
 
 ```
- main にマージ ─▶ GitHub Actions（.github/workflows/deploy.yml）
+ main にマージ ─▶ CI（ci.yml）が成功 ─▶ GitHub Actions（.github/workflows/deploy.yml）
+                   0. アプリに関わる変更がなければ、ここで終わる
                    1. ARM のランナーでイメージをビルド
                    2. ECR に push（latest と コミット ID の2つのタグ）
                    3. タグ Project=budget の起動中の EC2 を探す（1台に定まらなければ止める）
@@ -309,9 +310,9 @@ aws ssm send-command --instance-ids (terraform -chdir=infra/terraform output -ra
 
 | 決めたこと | 理由 |
 |---|---|
-| 動くのはアプリのコード・`Dockerfile`・依存のファイルが変わったときだけ | 設計書だけの変更で無駄にデプロイしない |
-| 発火条件は main への `push`。`pull_request` にしない | 公開リポジトリでは、他人の PR のコードが AWS の権限付きで動いてしまう |
-| CI（`ci.yml`）が通ったコミットだけをデプロイする | NF-OP-04 |
+| `docs/`・`infra/`・`prototype/`・`*.md` だけの変更ではデプロイしない | 設計書だけの変更で無駄にデプロイしない。Terraform の変更は手で `apply` する |
+| 発火条件は「main への `push` で動いた CI の成功」（`workflow_run`）。`pull_request` では動かさない | CI が通ったコミットだけをデプロイする（NF-OP-04）。公開リポジトリでは、他人の PR のコードが AWS の権限付きで動いてしまうため |
+| デプロイは同時に1つだけ（`concurrency`） | 続けてマージしても、入れ替えがぶつからない |
 | デプロイ先はタグで探す | EC2 を作り直すとインスタンス ID が変わるため |
 | **EC2 が止まっていると、デプロイは失敗する** | 起動してから、GitHub の Actions の画面で再実行する。起動時にも `deploy.sh` が最新のイメージを取り込む |
 
@@ -496,4 +497,5 @@ aws s3 ls
 |---|---|---|
 | 0.1 | 2026-10-06 | 作成（デプロイの設計。構築・自動デプロイの前） |
 | 0.2 | 2026-10-06 | 本番の設定とイメージ（3.1・4.2）を、作ったものに合わせて追記 |
+| 0.4 | 2026-10-06 | 自動デプロイ（6.1）を、作ったワークフローに合わせて更新 |
 | 0.3 | 2026-10-06 | 構築の結果に合わせて更新：予算のアラートは設定済みのものを使う（1.1・2.4）、構築の手順（5.3）、確かめること（5.4）、Docker の版数（4.1）、つまずきポイント |
