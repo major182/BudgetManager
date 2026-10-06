@@ -3,7 +3,7 @@
 | 項目 | 内容 |
 |---|---|
 | 文書番号 | 06 |
-| 版数 | 0.1 |
+| 版数 | 0.2 |
 | 作成日 | 2026-10-06 |
 | 作成者 | major182 |
 | 前提となる文書 | [01 要件定義書](01_requirements.md)、[02 技術選定書](02_tech-stack.md) |
@@ -159,6 +159,7 @@ AWS 上でアプリを動かし、本人の端末から Tailscale を通して�
 
 - Terraform が作った秘密の値は、手元の状態ファイル（tfstate）にも平文で残る。tfstate はリポジトリに入れず（`.gitignore`）、手元の PC だけに置く
 - 環境変数の名前は、開発と同じ（`.env.example`）。`DEBUG` は本番では設定せず、既定値の `False` を使う（S-05）
+- `PRODUCTION=True` はイメージ（`Dockerfile`）に入れてある。HTTPS 用の Cookie・HSTS・HTTP から HTTPS への転送・静的ファイルのハッシュ付きの名前が有効になる（`config/settings.py`）
 
 ### 3.2 Tailscale の準備（利用者の作業）
 
@@ -211,7 +212,10 @@ AWS 上でアプリを動かし、本人の端末から Tailscale を通して�
 | 項目 | 内容 |
 |---|---|
 | 起動 | `docker run -d --name app --restart unless-stopped -p 127.0.0.1:8000:8000 --env-file /opt/budget/app.env --log-driver awslogs …` |
-| 起動時の処理 | `migrate` → Gunicorn（ワーカー 2）。静的ファイルはイメージを作るときに `collectstatic` 済み（WhiteNoise が配信） |
+| イメージ | `Dockerfile`。`python:3.14.7-slim-trixie` を土台に、依存を uv で入れ、`collectstatic` まで済ませる。管理者でない利用者（uid 10001）で動かす。大きさ 約 250MB |
+| 起動時の処理 | `docker/app/entrypoint.sh`：`migrate` → Gunicorn（`docker/app/gunicorn.conf.py`、ワーカー 2）。引数を付けると、その管理コマンドを動かす |
+| 静的ファイル | WhiteNoise が配信。ファイル名にハッシュを付け、圧縮し、ブラウザに長く保存させる。同梱の Chart.js に残る `.map` への参照で失敗しないよう、JavaScript の中の参照は書き換えない（`core/storage.py`） |
+| HTTPS の判定 | `tailscale serve` が付ける `X-Forwarded-Proto: https` で判定する（Tailscale 1.102.5 のソースで確認）。Gunicorn には 127.0.0.1 からしか届かないため、この見出しを偽れない |
 | ログ | 標準出力に出し、awslogs で CloudWatch Logs のロググループ `/budget/app` に送る（30日で削除） |
 | メモリ | Gunicorn のワーカー 2 で 約 200MB。t4g.micro（1GB）に収まる |
 
@@ -479,3 +483,4 @@ aws s3 ls
 | 版数 | 日付 | 内容 |
 |---|---|---|
 | 0.1 | 2026-10-06 | 作成（デプロイの設計。構築・自動デプロイの前） |
+| 0.2 | 2026-10-06 | 本番の設定とイメージ（3.1・4.2）を、作ったものに合わせて追記 |

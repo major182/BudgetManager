@@ -1,0 +1,18 @@
+# イメージに入れないもの（秘密情報・開発用・生成物）
+.git
+.github
+.env
+.env.*
+.venv
+**/__pycache__
+.mypy_cache
+.pytest_cache
+.ruff_cache
+staticfiles
+docs
+prototype
+infra
+**/tests
+tests
+scripts
+compose.yaml
