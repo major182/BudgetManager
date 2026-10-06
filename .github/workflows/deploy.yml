@@ -48,6 +48,12 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # 公開リポジトリの実行ログは誰でも読めるため、AWS のアカウント ID を伏せ字にする。
+      # イメージの置き場の URL などに含まれて、以降のログに出るのを防ぐ
+      - name: アカウント ID をログに出さない
+        if: steps.changes.outputs.app == 'true'
+        run: echo "::add-mask::$(aws sts get-caller-identity --query Account --output text)"
+
       - uses: aws-actions/amazon-ecr-login@v2.1.7
         if: steps.changes.outputs.app == 'true'
         id: ecr
@@ -76,6 +82,7 @@ jobs:
             echo "::error::デプロイ先が1台に定まりません（起動中の EC2：$count 台）。EC2 を起動してから、このワークフローを再実行してください"
             exit 1
           fi
+          echo "::add-mask::$ids" # インスタンス ID もログに出さない
           echo "id=$ids" >> "$GITHUB_OUTPUT"
 
       - name: EC2 のコンテナを入れ替える
