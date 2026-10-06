@@ -54,8 +54,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    # CSS・JavaScript を Django から配信する（技術選定書 5章）
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -119,6 +117,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # 標準出力に出し、本番では Docker が CloudWatch Logs に送って30日で消す（06 デプロイ設計書 4.2）
 # 本番の設定（06 デプロイ設計書 1.3）。CI でも PRODUCTION=True で check --deploy を通す（S-07）
 if PRODUCTION:
+    # CSS・JavaScript を Django から配信する（技術選定書 5章）。SecurityMiddleware のすぐ後に置く。
+    # 開発では開発用サーバーが配信する。
+    # テストでは集約先（staticfiles/）がなく、入れると毎回警告が出る
+    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
     # ファイル名に中身のハッシュを付け、圧縮して配信する
     # （ブラウザに長く保存させても、更新が反映される）
     STORAGES["staticfiles"] = {"BACKEND": "core.storage.StaticFilesStorage"}

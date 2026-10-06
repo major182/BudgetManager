@@ -90,10 +90,15 @@ jobs:
             --comment "deploy $SHA" \
             --parameters "commands=[\"/opt/$PROJECT/deploy.sh $SHA\"]" \
             --query Command.CommandId --output text)
-          # 終わるまで待つ。deploy.sh の応答の確認（最大 60 秒）が失敗すると、ここも失敗する
-          aws ssm wait command-executed --command-id "$command_id" --instance-id "$INSTANCE_ID" || true
+          # 終わるまで 5 秒ごとに確かめる（最大 10 分）。aws ssm wait は 100 秒で打ち切られるため使わない。
+          # deploy.sh の応答の確認（最大 60 秒）が失敗すると、ここも失敗する
+          status=Pending
+          for _ in $(seq 1 120); do
+            sleep 5
+            status=$(aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+              --query Status --output text 2>/dev/null || echo Pending)
+            case "$status" in Pending|InProgress|Delayed) ;; *) break ;; esac
+          done
           aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
             --query "[Status, StandardOutputContent, StandardErrorContent]" --output text
-          status=$(aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
-            --query Status --output text)
           test "$status" = "Success"
