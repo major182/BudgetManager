@@ -37,3 +37,6 @@ __pycache__/
 .ruff_cache/
 db.sqlite3
 staticfiles/
+
+# デモ動画の元のファイル（README には GitHub の添付ファイルとして載せている）
+docs/media/*.mp4
